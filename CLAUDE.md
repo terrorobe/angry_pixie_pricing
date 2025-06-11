@@ -65,3 +65,20 @@ mypy src/
 - **Data Processing**: Handles European electricity market data and smart meter readings
 - **Visualization**: Creates charts for hourly price analysis
 - **Cost Analysis**: Processes 15-minute smart meter data for cost calculations
+
+## 📊 Data Visualization Guidelines
+
+**CRITICAL**: All charts must display raw data points without interpolation unless explicitly requested by the user.
+
+### Chart Requirements
+- Use discrete data points (markers) rather than continuous lines
+- No curve smoothing or interpolation between hourly data points
+- Each data point represents actual hourly electricity prices
+- Preserve the step-like nature of hourly price data
+- Use plotext markers (braille, dot, etc.) to show individual data points clearly
+
+### Rationale
+- Electricity prices are discrete hourly values, not continuous functions
+- Interpolation can misrepresent actual market data and create misleading patterns
+- Users need to see exact price points for accurate analysis
+- Duck curve analysis requires precise hourly values, not smoothed approximations

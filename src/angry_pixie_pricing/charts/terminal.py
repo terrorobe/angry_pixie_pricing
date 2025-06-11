@@ -32,8 +32,8 @@ def create_terminal_price_chart(
     prices = df["price"].tolist()
     indices = list(range(len(prices)))
 
-    # Create the plot
-    plt.plot(indices, prices, marker="braille", color="cyan")
+    # Create the plot - discrete data points only, no interpolation
+    plt.scatter(indices, prices, marker="braille", color="cyan")
 
     # Set title
     if title is None:
@@ -206,8 +206,8 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         workday_prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
         nonworkday_prices = [nonworkday_stats[nonworkday_stats['hour'] == h]['mean'].iloc[0] if not nonworkday_stats[nonworkday_stats['hour'] == h].empty else 0 for h in hours]
         
-        plt.plot(hours, workday_prices, label="Workdays", color="red", marker="braille")
-        plt.plot(hours, nonworkday_prices, label="Weekends/Holidays", color="blue", marker="braille") 
+        plt.scatter(hours, workday_prices, label="Workdays", color="red", marker="braille")
+        plt.scatter(hours, nonworkday_prices, label="Weekends/Holidays", color="blue", marker="braille") 
         
         plt.title(f"Duck Curve Analysis - {region} (Workdays vs Weekends/Holidays)")
         plt.xlabel("Hour of Day")
@@ -287,7 +287,7 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     hours = list(range(24))
     prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
     
-    plt.plot(hours, prices, marker="braille", color="cyan")
+    plt.scatter(hours, prices, marker="braille", color="cyan")
     plt.title(f"Workday Duck Curve - {region}")
     plt.xlabel("Hour of Day")
     plt.ylabel(f"Average Price ({unit})")
