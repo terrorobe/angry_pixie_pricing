@@ -39,16 +39,7 @@ def cli(ctx, data_source: str, cache_dir: Optional[str]):
     "-t",
     type=click.Choice(["line", "daily", "summary", "hourly", "hourly-workday", "all"]),
     default="line",
-    help="""Type of chart to display:
-    
-    line: Hourly price timeline with braille markers
-    daily: Bar chart of daily average prices
-    summary: Statistical summary table with price ranges and extremes
-    hourly: Duck curve analysis comparing workdays vs weekends/holidays
-    hourly-workday: Detailed workday-only duck curve pattern
-    all: Display line, daily, and summary charts together
-    
-    Duck curve charts require holidays library for day-type classification.""",
+    help="Chart type: line (hourly timeline), daily (daily averages), summary (statistics), hourly (duck curve analysis), hourly-workday (workday duck curve), all (multiple charts)",
 )
 @click.option("--width", type=int, help="Chart width (terminal columns)")
 @click.option("--height", type=int, help="Chart height (terminal rows)")
