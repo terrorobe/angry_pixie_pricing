@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📋 Project Status & Development Plan
+
+**IMPORTANT**: See `PLAN.md` for current development status, roadmap, and next session tasks. Always read PLAN.md when starting a new session to understand what to work on next.
+
 ## Project Overview
 
 Angry Pixie Pricing is a Python tool for analyzing electricity prices in European markets. It supports two main modes:
