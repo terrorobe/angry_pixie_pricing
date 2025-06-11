@@ -8,6 +8,8 @@ from .charts.terminal import (
     create_terminal_price_chart,
     create_terminal_price_summary,
     create_terminal_daily_average_chart,
+    create_hourly_analysis_chart,
+    create_hourly_workday_chart,
 )
 
 
@@ -35,7 +37,7 @@ def cli(ctx, data_source: str, cache_dir: Optional[str]):
 @click.option(
     "--chart-type",
     "-t",
-    type=click.Choice(["line", "daily", "summary", "all"]),
+    type=click.Choice(["line", "daily", "summary", "hourly", "hourly-workday", "all"]),
     default="line",
     help="Type of chart to display",
 )
@@ -90,6 +92,12 @@ def chart(
 
         if chart_type == "summary" or chart_type == "all":
             create_terminal_price_summary(df, region)
+        
+        if chart_type == "hourly":
+            create_hourly_analysis_chart(df, region)
+        
+        if chart_type == "hourly-workday":
+            create_hourly_workday_chart(df, region)
 
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)

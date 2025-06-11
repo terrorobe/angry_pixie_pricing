@@ -3,6 +3,7 @@
 import plotext as plt
 import pandas as pd
 from typing import Optional
+from ..analysis.hourly import HourlyPriceAnalyzer
 
 
 def create_terminal_price_chart(
@@ -169,4 +170,142 @@ def create_terminal_daily_average_chart(df: pd.DataFrame, region: str) -> None:
     print("=" * 30)
     for _, row in daily_avg.iterrows():
         print(f"{row['date']}: {row['price']:.2f} {df['unit'].iloc[0]}")
+    print()
+
+
+def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
+    """
+    Create terminal charts showing hourly price patterns and duck curves.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        region: Region code for holiday detection and display
+    """
+    if df.empty:
+        print(f"No data available for {region}")
+        return
+    
+    analyzer = HourlyPriceAnalyzer(region)
+    results = analyzer.analyze_hourly_patterns(df)
+    
+    if not results:
+        print("No hourly analysis results available")
+        return
+    
+    unit = df['unit'].iloc[0] if not df.empty else 'EUR/MWh'
+    
+    # Chart 1: Workday vs Non-workday comparison
+    if 'workday' in results and 'non_workday' in results:
+        plt.clear_data()
+        plt.clear_figure()
+        
+        workday_stats = results['workday']
+        nonworkday_stats = results['non_workday']
+        
+        hours = list(range(24))
+        workday_prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
+        nonworkday_prices = [nonworkday_stats[nonworkday_stats['hour'] == h]['mean'].iloc[0] if not nonworkday_stats[nonworkday_stats['hour'] == h].empty else 0 for h in hours]
+        
+        plt.plot(hours, workday_prices, label="Workdays", color="red", marker="braille")
+        plt.plot(hours, nonworkday_prices, label="Weekends/Holidays", color="blue", marker="braille") 
+        
+        plt.title(f"Duck Curve Analysis - {region} (Workdays vs Weekends/Holidays)")
+        plt.xlabel("Hour of Day")
+        plt.ylabel(f"Average Price ({unit})")
+        
+        # Set x-axis to show every 4 hours
+        x_labels = [f"{h}:00" for h in range(0, 24, 4)]
+        plt.xticks(range(0, 24, 4), x_labels)
+        
+        plt.grid(True, True)
+        plt.show()
+    
+    # Analysis summary
+    print(f"\n🦆 Duck Curve Analysis for {region}")
+    print("=" * 50)
+    
+    comparison = analyzer.compare_workday_vs_nonworkday(results)
+    
+    if 'workday_features' in comparison:
+        features = comparison['workday_features']
+        print(f"📊 WORKDAY PATTERN")
+        print(f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}")
+        print(f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}")
+        print(f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}")
+        print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
+        print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
+        
+        # Calculate duck curve strength
+        from ..analysis.hourly import detect_duck_curve_strength
+        strength = detect_duck_curve_strength(df, region)
+        print(f"Duck strength:  {strength:.3f} (0=flat, 1=pronounced)")
+    
+    if 'non_workday_features' in comparison:
+        features = comparison['non_workday_features']
+        print(f"\n📊 WEEKEND/HOLIDAY PATTERN")
+        print(f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}")
+        print(f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}")
+        print(f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}")
+        print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
+        print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
+    
+    if 'differences' in comparison:
+        diff = comparison['differences']
+        print(f"\n🔍 WORKDAY vs WEEKEND/HOLIDAY DIFFERENCES")
+        print(f"Duck depth difference:  {diff.get('duck_depth_diff', 0):.1f} {unit}")
+        print(f"Evening ramp difference: {diff.get('evening_ramp_diff', 0):.1f} {unit}")
+        print(f"Price range difference:  {diff.get('price_range_diff', 0):.1f} {unit}")
+    
+    print()
+
+
+def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
+    """
+    Create terminal chart showing workday hourly patterns only.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        region: Region code for holiday detection and display
+    """
+    if df.empty:
+        print(f"No data available for {region}")
+        return
+    
+    analyzer = HourlyPriceAnalyzer(region)
+    results = analyzer.analyze_hourly_patterns(df)
+    
+    if 'workday' not in results:
+        print("No workday data available for analysis")
+        return
+    
+    workday_stats = results['workday']
+    unit = df['unit'].iloc[0] if not df.empty else 'EUR/MWh'
+    
+    plt.clear_data()
+    plt.clear_figure()
+    
+    hours = list(range(24))
+    prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
+    
+    plt.plot(hours, prices, marker="braille", color="cyan")
+    plt.title(f"Workday Duck Curve - {region}")
+    plt.xlabel("Hour of Day")
+    plt.ylabel(f"Average Price ({unit})")
+    
+    # Set x-axis to show every 2 hours for better detail
+    x_labels = [f"{h}:00" for h in range(0, 24, 2)]
+    plt.xticks(range(0, 24, 2), x_labels)
+    
+    plt.grid(True, True)
+    plt.show()
+    
+    # Show duck curve features
+    features = analyzer.detect_duck_curve_features(workday_stats)
+    print(f"\n🦆 Workday Duck Curve Features for {region}")
+    print("=" * 40)
+    print(f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}")
+    print(f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}")
+    print(f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}")
+    print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
+    print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
     print()
