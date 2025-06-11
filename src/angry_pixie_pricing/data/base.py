@@ -5,7 +5,6 @@ from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 from pathlib import Path
-import pickle
 import calendar
 
 
@@ -117,9 +116,12 @@ class PriceDataSource(ABC):
         return periods
 
     def _get_cache_filename(self, region: str, start_date: datetime, end_date: datetime) -> str:
-        """Generate readable cache filename."""
+        """Generate readable cache filename with data source attribution."""
         today = date.today()
         start_dt = start_date.date()
+        
+        # Get a clean data source name for filename
+        source_name = self.__class__.__name__.replace('DataSource', '').lower()
         
         # Check if this is a whole month
         month_start = start_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -130,10 +132,10 @@ class PriceDataSource(ABC):
             end_date.date() >= month_end.date() and
             (start_dt.year < today.year or (start_dt.year == today.year and start_dt.month < today.month))):
             # Past whole month
-            return f"{region}_{start_date.strftime('%Y-%m')}.pkl"
+            return f"{source_name}_{region}_{start_date.strftime('%Y-%m')}.csv.gz"
         else:
             # Day-based or partial month
-            return f"{region}_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.pkl"
+            return f"{source_name}_{region}_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.csv.gz"
 
     def _get_cached_data(self, region: str, start_date: datetime, end_date: datetime) -> Optional[pd.DataFrame]:
         """Retrieve cached data if available (legacy method for backwards compatibility)."""
@@ -162,8 +164,13 @@ class PriceDataSource(ABC):
 
         if cache_file.exists():
             try:
-                with open(cache_file, "rb") as f:
-                    return pickle.load(f)
+                # Read CSV with gzip compression
+                df = pd.read_csv(
+                    cache_file, 
+                    compression='gzip',
+                    parse_dates=['timestamp']
+                )
+                return df
             except Exception:
                 # If cache is corrupted, remove it
                 cache_file.unlink(missing_ok=True)
@@ -176,8 +183,13 @@ class PriceDataSource(ABC):
         cache_file = self.cache_dir / cache_filename
 
         try:
-            with open(cache_file, "wb") as f:
-                pickle.dump(data, f)
+            # Write CSV with gzip compression
+            data.to_csv(
+                cache_file,
+                compression='gzip',
+                index=False,
+                date_format='%Y-%m-%d %H:%M:%S'
+            )
         except Exception:
             # If caching fails, continue without error
             pass
@@ -190,14 +202,16 @@ class PriceDataSource(ABC):
             region: If specified, only clear cache for this region. Otherwise clear all.
         """
         if region is None:
-            # Clear all cache files
-            for cache_file in self.cache_dir.glob("*.pkl"):
-                cache_file.unlink(missing_ok=True)
+            # Clear all cache files (both old .pkl and new .csv.gz)
+            for pattern in ["*.pkl", "*.csv.gz"]:
+                for cache_file in self.cache_dir.glob(pattern):
+                    cache_file.unlink(missing_ok=True)
         else:
-            # Clear cache files for specific region
-            pattern = f"{region}_*.pkl"
-            for cache_file in self.cache_dir.glob(pattern):
-                cache_file.unlink(missing_ok=True)
+            # Clear cache files for specific region (both formats)
+            source_name = self.__class__.__name__.replace('DataSource', '').lower()
+            for pattern in [f"{region}_*.pkl", f"{source_name}_{region}_*.csv.gz"]:
+                for cache_file in self.cache_dir.glob(pattern):
+                    cache_file.unlink(missing_ok=True)
 
     @abstractmethod
     def _fetch_spot_prices(

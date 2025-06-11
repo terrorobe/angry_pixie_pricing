@@ -2,6 +2,7 @@
 data/cache/
 data/processed/
 data/raw/
+data/tmp/
 docs/
 venv/
 .venv/
