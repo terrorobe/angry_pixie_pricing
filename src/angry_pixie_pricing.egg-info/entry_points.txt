@@ -1,0 +1,2 @@
+[console_scripts]
+angry-pixie = angry_pixie_pricing.main:cli
