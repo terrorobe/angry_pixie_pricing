@@ -1,6 +1,7 @@
 """Main CLI entry point for angry_pixie_pricing."""
 
 import click
+import numpy as np
 from typing import Optional
 from datetime import datetime
 from .data.factory import DataSourceFactory

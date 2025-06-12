@@ -1,27 +1,36 @@
 # Angry Pixie Pricing - Development Plan
 
 ## Project Overview
-European electricity price analysis tool with terminal-based charting and smart meter cost calculations.
+Comprehensive European electricity price analysis tool featuring duck curve evolution tracking, negative pricing analysis with solar potential modeling, and smart meter cost calculations.
 
 ## Current Status ✅
 
 ### Core Infrastructure
-- [x] CLI framework with Click (chart, calculate, sources, clear-cache commands)
+- [x] CLI framework with Click (chart, duck-factor, negative-pricing, calculate, sources, clear-cache commands)
 - [x] Abstract data source architecture with caching
 - [x] EnergyCharts.info API integration
 - [x] CSV + gzip cache system with data source attribution
 - [x] Month-based caching for past months, day-based for current month
 - [x] Cache filename format: `{source}_{region}_{period}.csv.gz`
 - [x] Case-normalized region codes (always uppercase)
+- [x] Flexible date parsing (YYYY, YYYY-MM, YYYY-MM-DD) with smart defaults
+- [x] Project root anchoring for consistent output paths
+- [x] Centralized CLI option definitions with decorators
 
 ### Visualization System
-- [x] Terminal charting with plotext
+- [x] Terminal charting with plotext for fast analysis
+- [x] High-resolution PNG charts with matplotlib (300 DPI)
 - [x] Line charts for hourly prices with braille markers
 - [x] Daily average bar charts
 - [x] Statistical summary tables with price statistics
-- [x] Chart type options: `line`, `daily`, `summary`, `all`
+- [x] Duck curve visualizations (workday vs weekend/holiday patterns)
+- [x] Rolling duck factor time series charts
+- [x] Seasonal duck factor analysis with polar plots
+- [x] Negative pricing analysis with solar potential comparisons
+- [x] Chart type options: `line`, `daily`, `summary`, `hourly`, `hourly-workday`, `all`
 - [x] Customizable chart dimensions (`--width`, `--height`)
 - [x] Smart x-axis labeling with automatic density adjustment
+- [x] Auto-generated descriptive filenames with organized output structure
 
 ### Code Quality
 - [x] Git repository initialized
@@ -29,18 +38,15 @@ European electricity price analysis tool with terminal-based charting and smart 
 - [x] Black code formatting applied
 - [x] Clean git history (no generated files committed)
 
-## ✅ COMPLETED: Holiday-Aware Duck Curve Analysis 🦆
+## ✅ COMPLETED: Advanced Market Analysis Suite 🦆⚡
 
 ### Objective ✅ ACHIEVED
-Successfully implemented comprehensive duck curve analysis that differentiates between workdays and weekends/holidays, revealing distinct European electricity market patterns driven by economic activity and renewable energy integration.
+Successfully implemented comprehensive electricity market analysis suite including:
+1. **Holiday-aware duck curve analysis** with workday/weekend differentiation
+2. **Rolling duck factor evolution** tracking renewable energy impact over multiple years
+3. **Negative pricing analysis** with solar potential modeling and grid saturation estimates
 
-### Research Completed ✅
-- [x] Identified Python `holidays` library as optimal data source
-- [x] Verified accuracy against authoritative sources (TimeAndDate.com)
-- [x] Confirmed coverage for Western European countries (DE, FR, NL, BE, AT, CH)
-- [x] Validated workday vs weekend/holiday classification strategy
-
-### Implementation Completed ✅
+### Duck Curve Analysis ✅ COMPLETE
 
 #### Phase 1: Holiday Infrastructure ✅ COMPLETE
 - [x] Add `holidays>=0.34` to requirements.txt
@@ -66,18 +72,58 @@ Successfully implemented comprehensive duck curve analysis that differentiates b
 - [x] Add comprehensive CLI integration with enhanced help text
 - [x] Validate with real German summer data showing textbook duck curves
 
-### 🎯 Validation Results
-- **Germany July 2023**: Duck curve strength 0.849 (highly pronounced)
-- **Workday pattern**: 6AM peak → 12PM solar dip → 6PM evening peak  
-- **Weekend pattern**: Even more pronounced with negative midday prices (-52.0 EUR/MWh)
-- **Key insight**: Weekends show 38.2 EUR/MWh deeper duck curves than workdays
+### Rolling Duck Factor Analysis ✅ COMPLETE
 
-### Phase 4: Advanced Features (Future)
-- [ ] Regional holiday support (German states, etc.)
-- [ ] Bridge day detection (holidays creating long weekends)
-- [ ] School holiday integration for enhanced analysis
-- [ ] Seasonal stratification options (summer vs winter patterns)
-- [ ] Export functionality for hourly analysis data
+#### Phase 1: Rolling Window Implementation ✅ COMPLETE
+- [x] Create `src/angry_pixie_pricing/analysis/rolling_duck.py` module
+- [x] Implement configurable rolling windows (7d, 30d, 90d) with custom step sizes
+- [x] Add multi-window comparative analysis capabilities
+- [x] Implement statistical trend detection with R-squared confidence metrics
+
+#### Phase 2: Temporal Pattern Analysis ✅ COMPLETE
+- [x] Add seasonal pattern detection (Winter/Spring/Summer/Fall)
+- [x] Implement year-over-year comparison and growth tracking
+- [x] Add inflection point detection for significant market changes
+- [x] Create volatility trend analysis for market stability assessment
+
+#### Phase 3: Duck Factor Visualization ✅ COMPLETE
+- [x] Create terminal and PNG time series charts for duck factor evolution
+- [x] Add seasonal analysis charts with polar plots and monthly breakdowns
+- [x] Implement multi-window comparison visualizations
+- [x] Add comprehensive CLI command `duck-factor` with multiple chart types
+
+### Negative Pricing Analysis ✅ COMPLETE
+
+#### Phase 1: Solar Potential Modeling ✅ COMPLETE
+- [x] Create `src/angry_pixie_pricing/analysis/negative_pricing.py` module
+- [x] Integrate EU PVGIS solar irradiation data for 13 European countries
+- [x] Add Global Solar Atlas and Copernicus Climate Data Store attribution
+- [x] Implement current solar capacity estimates and grid flexibility factors
+
+#### Phase 2: Saturation Analysis ✅ COMPLETE
+- [x] Calculate theoretical maximum hours of negative pricing per region/month
+- [x] Model multiple capacity scenarios (current, 2x, 5x, 10x solar capacity)
+- [x] Implement progress metrics showing advancement toward grid saturation
+- [x] Add seasonal variation analysis for solar potential
+
+#### Phase 3: Negative Pricing Visualization ✅ COMPLETE
+- [x] Create comprehensive 4-panel PNG charts (hourly, monthly, current vs max, progress)
+- [x] Add terminal charts for negative pricing patterns by hour of day
+- [x] Implement CLI command `negative-pricing` with threshold customization
+- [x] Add detailed analysis summaries with regional context
+
+### 🎯 Validation Results
+- **Germany 2019-2025**: Duck factor 0.663 average, strong seasonal variation (Spring peak, Winter low)
+- **Renewable Progress**: 4.7% average annual growth in duck curve strength
+- **Solar Potential**: Comprehensive modeling showing current vs theoretical maximum hours
+- **Regional Insights**: Grid flexibility differences between hydro-rich (Norway 0.95) vs constrained (Italy 0.5) countries
+
+### CLI Usability Improvements ✅ COMPLETE
+- [x] Flexible date parsing supporting YYYY, YYYY-MM, YYYY-MM-DD formats
+- [x] Smart end-date defaults (automatically defaults to today when omitted)
+- [x] Project root anchoring for consistent image output regardless of execution directory
+- [x] Centralized CLI option definitions using decorators to eliminate code duplication
+- [x] Auto-generated descriptive filenames with organized `images/` directory structure
 
 ## Architecture Decisions Made
 
@@ -102,24 +148,32 @@ Successfully implemented comprehensive duck curve analysis that differentiates b
 - **Human-readable**: Clear labels, appropriate scaling, informative summaries
 - **Progressive complexity**: Basic charts first, advanced analysis optional
 
-## Known Technical Debt
+## Next Development Priorities
 
-### Code Quality
-- [ ] Add comprehensive unit test suite
+### High Priority Features
+- [ ] Smart meter cost calculation implementation (currently TODO placeholder)
+- [ ] Real-time API integration for live solar irradiation data (replacing static estimates)
+- [ ] Cross-regional comparative analysis dashboards
+- [ ] Historical trend forecasting models
+
+### Code Quality & Testing
+- [ ] Add comprehensive unit test suite for all analysis modules
 - [ ] Implement mypy type checking (currently has import-untyped warnings)
-- [ ] Add integration tests for API data fetching
+- [ ] Add integration tests for API data fetching and analysis pipelines
 - [ ] Add docstring examples for all public functions
+- [ ] Performance benchmarking for multi-year analysis workflows
 
-### Performance
-- [ ] Implement async data fetching for multiple regions
-- [ ] Add progress bars for long data fetches
-- [ ] Optimize large dataset handling for multi-year analysis
+### Advanced Analytics
+- [ ] Correlation analysis between duck curves and weather patterns
+- [ ] Grid congestion pricing spike detection algorithms
+- [ ] Carbon intensity correlation with pricing patterns
+- [ ] Machine learning models for price anomaly detection
 
-### Features
-- [ ] Smart meter cost calculation implementation (currently TODO)
-- [ ] File export options for charts (PNG, SVG)
-- [ ] More data sources beyond EnergyCharts.info
-- [ ] Configuration file support for default settings
+### Data Integration Expansion
+- [ ] More electricity market APIs (ENTSO-E, Nord Pool, etc.)
+- [ ] Weather data integration for renewable correlation analysis
+- [ ] Industrial production indices for demand pattern analysis
+- [ ] Real-time solar capacity tracking from national grid operators
 
 ## Session Handoff Notes
 

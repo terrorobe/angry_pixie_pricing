@@ -118,7 +118,8 @@ class NegativePricingAnalyzer:
         # Calculate daily averages
         df_with_date = df.copy()
         df_with_date['date'] = df_with_date['timestamp'].dt.date
-        daily_negative = df_with_date.groupby('date')[negative_mask].sum()
+        df_with_date['is_negative'] = negative_mask
+        daily_negative = df_with_date.groupby('date')['is_negative'].sum()
         avg_hours_per_day = daily_negative.mean()
         
         # Find maximum consecutive hours

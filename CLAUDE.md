@@ -17,12 +17,54 @@ Angry Pixie Pricing is a comprehensive Python tool for analyzing electricity pri
 
 ## Development Setup
 
+### Python Environment
+The project uses a Python virtual environment located at `./venv/` in the project root.
+
+**CRITICAL**: Always activate the virtual environment before running any commands:
 ```bash
+# Activate virtual environment (required for all operations)
+source venv/bin/activate
+
+# Verify environment is active (should show project path)
+which python
+which angry-pixie
+```
+
+### Installation
+```bash
+# If venv doesn't exist, create it first:
+python3 -m venv venv
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
 # Install package in development mode
 pip install -e .
+```
+
+### Running Commands
+All commands must be run with the virtual environment activated:
+```bash
+# ALWAYS start with this
+source venv/bin/activate
+
+# Then run commands
+angry-pixie chart --region DE --start-date 2024-07
+angry-pixie negative-pricing --region AT --start-date 2020
+angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024
+```
+
+### Testing & Debugging
+```bash
+# Activate venv first
+source venv/bin/activate
+
+# Run tests
+python test_script.py
+
+# Direct module execution
+python -m src.angry_pixie_pricing.main --help
 ```
 
 ## Commands
@@ -86,6 +128,9 @@ angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-
 
 ### Development Commands
 ```bash
+# ALWAYS activate venv first
+source venv/bin/activate
+
 # Run tests
 pytest tests/
 
@@ -97,6 +142,53 @@ flake8 src/ tests/
 
 # Type checking
 mypy src/
+```
+
+## Troubleshooting
+
+### Python Environment Issues
+
+**Error: `command not found: python` or `command not found: angry-pixie`**
+```bash
+# Solution: Activate the virtual environment
+source venv/bin/activate
+```
+
+**Error: `ModuleNotFoundError: No module named 'pandas'` (or other dependencies)**
+```bash
+# Solution: Virtual environment not activated or dependencies not installed
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+```
+
+**Error: `externally-managed-environment` when using pip**
+```bash
+# Solution: Use the virtual environment instead of system pip
+source venv/bin/activate  # This uses venv's pip, not system pip
+pip install -e .
+```
+
+**Testing Fixes:**
+```bash
+# Create a simple test script to verify environment
+source venv/bin/activate
+python -c "import pandas; import numpy; print('Environment OK')"
+
+# Test specific functionality
+angry-pixie --help
+angry-pixie chart --region DE --start-date 2024-01 --end-date 2024-01
+```
+
+### Environment Verification
+```bash
+# Check virtual environment is active
+source venv/bin/activate
+which python     # Should show: /Users/terrorobe/source/angry_pixie_pricing/venv/bin/python
+which angry-pixie # Should show: /Users/terrorobe/source/angry_pixie_pricing/venv/bin/angry-pixie
+
+# Check installed packages
+pip list | grep -E "(pandas|numpy|click|plotext)"
 ```
 
 ## Architecture

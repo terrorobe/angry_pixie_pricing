@@ -621,8 +621,8 @@ def create_terminal_duck_factor_chart(
     
     # Print summary statistics
     print(f"\nDuck Factor Summary:")
-    print(f"Average:    {factors and np.mean(factors):.3f}")
-    print(f"Range:      {factors and (np.max(factors) - np.min(factors)):.3f}")
+    print(f"Average:    {np.mean(factors) if factors else 0:.3f}")
+    print(f"Range:      {(np.max(factors) - np.min(factors)) if factors else 0:.3f}")
     print(f"Trend:      {_calculate_simple_trend(factors)}")
     print(f"Data points: {len(factors)}")
     print()
