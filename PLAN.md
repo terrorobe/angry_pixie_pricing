@@ -175,25 +175,51 @@ Successfully implemented comprehensive electricity market analysis suite includi
 - [ ] Industrial production indices for demand pattern analysis
 - [ ] Real-time solar capacity tracking from national grid operators
 
+## ✅ COMPLETED: Bug Fixes & Usability Improvements 🔧📊
+
+### Recent Session Accomplishments
+Successfully resolved critical bugs and enhanced user experience:
+
+#### 🐛 Bug Fixes Completed
+1. **Negative Pricing Analysis Error**: Fixed pandas groupby error where boolean mask was incorrectly used as column selector
+2. **Missing Numpy Import**: Added numpy import to main.py for seasonal analysis calculations
+3. **F-string Syntax Error**: Fixed incorrect syntax in duck factor summary calculations
+4. **Empty Slice Warnings**: Eliminated numpy warnings by adding proper empty list checking
+
+#### 📈 Usability Enhancements Completed
+1. **Threshold Display in Charts**: Both terminal and PNG charts now show exact criteria used (e.g., "Negative: <0 EUR/MWh, Near-Zero: ≤5.0 EUR/MWh")
+2. **Enhanced Documentation**: Added comprehensive Python virtual environment setup guide in CLAUDE.md
+3. **Troubleshooting Guide**: Added common error scenarios and solutions for future sessions
+
+### Current System Status
+- **All Core Features**: ✅ Working (negative pricing, duck curves, rolling analysis)
+- **Data Pipeline**: ✅ Stable (includes 2025 forecast data)
+- **Chart Generation**: ✅ Enhanced (clear threshold labeling)
+- **Python Environment**: ✅ Documented (comprehensive venv guide)
+
 ## Session Handoff Notes
 
 ### For Next Session
-1. Start with implementing the holidays dependency and day classification utilities
-2. The cache system is solid - focus on analysis features
-3. All chart infrastructure exists - new chart types can be added easily
-4. Region normalization is handled - always use uppercase in cache filenames
+1. **Environment Setup**: Always start with `source venv/bin/activate` (documented in CLAUDE.md)
+2. **Ready for Enhancement**: Core system is stable, ready for new features or model improvements
+3. **Pending Items**:
+   - Fix CLI duplicate --output parameter warning (low priority)
+   - Improve solar potential model accuracy (consider wind/hydro)
+   - Consider cross-regional comparative analysis features
 
 ### Key Files to Know
 - `src/angry_pixie_pricing/data/base.py` - Abstract caching and data source framework
 - `src/angry_pixie_pricing/data/energy_charts.py` - EnergyCharts.info API implementation  
-- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions
-- `src/angry_pixie_pricing/main.py` - CLI command definitions
+- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions (now with threshold display)
+- `src/angry_pixie_pricing/main.py` - CLI command definitions (numpy import added)
+- `src/angry_pixie_pricing/analysis/negative_pricing.py` - Fixed pandas groupby issue
 
 ### Development Workflow
 1. Use TodoWrite tool to track session progress
-2. Commit frequently with descriptive messages
-3. Update this PLAN.md file when major features complete
-4. Run `black src/` before committing for consistent formatting
+2. Always activate venv: `source venv/bin/activate`
+3. Commit frequently with descriptive messages
+4. Update this PLAN.md file when major features complete
+5. Run `black src/` before committing for consistent formatting
 
 ## Long-term Vision
 
@@ -218,5 +244,6 @@ Successfully implemented comprehensive electricity market analysis suite includi
 
 ---
 
-*Last updated: Session where CSV caching was implemented and holiday analysis planned*
-*Next priority: Holiday-aware hourly analysis implementation*
+*Last updated: Bug fix and usability improvement session*
+*Current status: All major features working, system stable and well-documented*
+*Next priorities: Solar model improvements, CLI warning fixes, cross-regional analysis*

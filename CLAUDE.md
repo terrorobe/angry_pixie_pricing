@@ -285,3 +285,21 @@ pip list | grep -E "(pandas|numpy|click|plotext)"
 - **Solar Capacity**: SolarPower Europe, IRENA Global Energy Transformation statistics
 - **Grid Flexibility**: Estimated based on hydro storage, interconnection, demand response capabilities
 - **Note**: All data sources are approximate and compiled for modeling purposes
+
+## Recent Updates & Fixes
+
+### Latest Session (Bug Fixes & Usability)
+- ✅ **Fixed Critical Error**: Resolved `'Columns not found: False, True'` error in negative pricing analysis
+- ✅ **Eliminated Warnings**: Fixed numpy empty slice warnings in seasonal calculations
+- ✅ **Enhanced Charts**: Added threshold information display (e.g., "Negative: <0 EUR/MWh, Near-Zero: ≤5.0 EUR/MWh")
+- ✅ **Documentation**: Added comprehensive Python environment setup and troubleshooting guide
+- ✅ **System Stability**: All core features now working reliably with clear user feedback
+
+### Current System Status
+All major analysis commands are working correctly:
+```bash
+source venv/bin/activate
+angry-pixie chart --region DE --start-date 2024-07                    # ✅ Working
+angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024 # ✅ Working  
+angry-pixie negative-pricing --region AT --start-date 2020            # ✅ Fixed & Working
+```
