@@ -67,3 +67,7 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+
+# Generated images and charts
+images/
+*.png

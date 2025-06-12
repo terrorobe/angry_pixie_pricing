@@ -26,8 +26,14 @@ pip install -e .
 
 ### Running the Application
 ```bash
-# Generate price charts
+# Generate terminal charts (default)
+angry-pixie chart --region DE --start-date 2024-01-01 --end-date 2024-01-31
+
+# Generate PNG charts
 angry-pixie chart --region DE --start-date 2024-01-01 --end-date 2024-01-31 --output chart.png
+
+# Duck curve analysis
+angry-pixie chart --region DE --start-date 2024-07-01 --end-date 2024-07-31 --chart-type hourly --output duck_curve.png
 
 # Calculate costs from smart meter data
 angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-01-01 --end-date 2024-01-31
@@ -63,7 +69,7 @@ mypy src/
 ### Key Components
 - **CLI Interface**: Click-based command-line tool with chart and calculate commands
 - **Data Processing**: Handles European electricity market data and smart meter readings
-- **Visualization**: Creates charts for hourly price analysis
+- **Visualization**: Creates both terminal and PNG charts for hourly price analysis
 - **Cost Analysis**: Processes 15-minute smart meter data for cost calculations
 
 ## 📊 Data Visualization Guidelines
@@ -71,11 +77,20 @@ mypy src/
 **CRITICAL**: All charts must display raw data points connected by straight lines only, without curve interpolation unless explicitly requested by the user.
 
 ### Chart Requirements
+**Terminal Charts (plotext):**
 - Use `plt.plot()` with markers to connect discrete data points with straight lines
+- Use `marker="hd"` (default plotext marker) for clear data point visibility
 - No curve smoothing, spline interpolation, or bezier curves between hourly data points
+
+**PNG Charts (matplotlib):**
+- Use `ax.plot()` with small markers ('o', 's') and appropriate line width
+- High-resolution output (300 DPI) with publication-quality formatting
+- Proper axis labeling, grid lines, and legends
+- No curve smoothing, spline interpolation, or bezier curves between hourly data points
+
+**Universal Requirements:**
 - Each data point represents actual hourly electricity prices
 - Lines connect adjacent time periods with simple straight segments
-- Use `marker="hd"` (default plotext marker) for clear data point visibility
 
 ### Chart Content Requirements
 - **Data Context**: All charts must include region, time range, and any applied filters in titles/labels

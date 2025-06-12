@@ -2,8 +2,19 @@
 
 import plotext as plt
 import pandas as pd
-from typing import Optional
+import numpy as np
+from typing import Optional, Dict, Any
 from ..analysis.hourly import HourlyPriceAnalyzer
+from ..analysis.rolling_duck import RollingDuckAnalyzer
+
+# Try to import matplotlib for PNG export, fall back gracefully
+try:
+    import matplotlib.pyplot as mpl_plt
+    import matplotlib.dates as mdates
+    from matplotlib.figure import Figure
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 
 def _get_country_name(region_code: str) -> str:
@@ -33,6 +44,201 @@ def _get_country_name(region_code: str) -> str:
         'UK': 'United Kingdom'
     }
     return country_names.get(region_code.upper(), region_code)
+
+
+def create_png_price_chart(
+    df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    title: Optional[str] = None,
+    width: int = 12,
+    height: int = 6,
+) -> None:
+    """
+    Create a PNG price chart using matplotlib.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        region: Region code for the chart title
+        output_path: Path to save the PNG file
+        title: Optional custom title
+        width: Figure width in inches
+        height: Figure height in inches
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG chart generation")
+    
+    if df.empty:
+        print(f"No data available for {region}")
+        return
+    
+    # Create figure and axis
+    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    
+    # Plot the data
+    ax.plot(df['timestamp'], df['price'], marker='o', markersize=2, linewidth=1.5, color='#1f77b4')
+    
+    # Set title
+    if title is None:
+        start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+        end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+        country_name = _get_country_name(region)
+        title = f"Electricity Spot Prices - {country_name} ({start_date} to {end_date})"
+    
+    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel("Time", fontsize=12)
+    ax.set_ylabel(f"Price ({df['unit'].iloc[0] if not df.empty else 'EUR/MWh'})", fontsize=12)
+    
+    # Format x-axis for better date display
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M'))
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=max(1, len(df) // 10)))
+    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    # Add grid
+    ax.grid(True, alpha=0.3)
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Chart saved to: {output_path}")
+
+
+def create_png_hourly_analysis_chart(
+    df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 6,
+) -> None:
+    """
+    Create PNG duck curve analysis chart using matplotlib.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        region: Region code for holiday detection and display
+        output_path: Path to save the PNG file
+        width: Figure width in inches
+        height: Figure height in inches
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG chart generation")
+        
+    if df.empty:
+        print(f"No data available for {region}")
+        return
+    
+    analyzer = HourlyPriceAnalyzer(region)
+    results = analyzer.analyze_hourly_patterns(df)
+    
+    if not results or 'workday' not in results or 'non_workday' not in results:
+        print("Insufficient data for duck curve analysis")
+        return
+    
+    # Create figure and axis
+    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    
+    workday_stats = results['workday']
+    nonworkday_stats = results['non_workday']
+    unit = df['unit'].iloc[0] if not df.empty else 'EUR/MWh'
+    
+    hours = list(range(24))
+    workday_prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
+    nonworkday_prices = [nonworkday_stats[nonworkday_stats['hour'] == h]['mean'].iloc[0] if not nonworkday_stats[nonworkday_stats['hour'] == h].empty else 0 for h in hours]
+    
+    # Plot both lines
+    ax.plot(hours, workday_prices, marker='o', markersize=4, linewidth=2, label='Workdays', color='#d62728')
+    ax.plot(hours, nonworkday_prices, marker='s', markersize=4, linewidth=2, label='Weekends/Holidays', color='#2ca02c')
+    
+    # Set title and labels
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    ax.set_title(f"Duck Curve Analysis - {country_name} ({start_date} to {end_date})", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Hour of Day", fontsize=12)
+    ax.set_ylabel(f"Average Price ({unit})", fontsize=12)
+    
+    # Set x-axis ticks
+    ax.set_xticks(range(0, 24, 4))
+    ax.set_xticklabels([f"{h}:00" for h in range(0, 24, 4)])
+    
+    # Add grid and legend
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=11)
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Duck curve chart saved to: {output_path}")
+
+
+def create_png_hourly_workday_chart(
+    df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 6,
+) -> None:
+    """
+    Create PNG workday-only duck curve chart using matplotlib.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        region: Region code for holiday detection and display
+        output_path: Path to save the PNG file
+        width: Figure width in inches
+        height: Figure height in inches
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG chart generation")
+        
+    if df.empty:
+        print(f"No data available for {region}")
+        return
+    
+    analyzer = HourlyPriceAnalyzer(region)
+    results = analyzer.analyze_hourly_patterns(df)
+    
+    if 'workday' not in results:
+        print("No workday data available for analysis")
+        return
+    
+    workday_stats = results['workday']
+    unit = df['unit'].iloc[0] if not df.empty else 'EUR/MWh'
+    
+    # Create figure and axis
+    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    
+    hours = list(range(24))
+    prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
+    
+    # Plot the line
+    ax.plot(hours, prices, marker='o', markersize=4, linewidth=2, color='#1f77b4')
+    
+    # Set title and labels
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    ax.set_title(f"Workday Duck Curve - {country_name} ({start_date} to {end_date})", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Hour of Day", fontsize=12)
+    ax.set_ylabel(f"Average Price ({unit})", fontsize=12)
+    
+    # Set x-axis ticks
+    ax.set_xticks(range(0, 24, 2))
+    ax.set_xticklabels([f"{h}:00" for h in range(0, 24, 2)])
+    
+    # Add grid
+    ax.grid(True, alpha=0.3)
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Workday duck curve chart saved to: {output_path}")
 
 
 def create_terminal_price_chart(
@@ -347,3 +553,284 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
     print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
     print()
+
+
+def create_terminal_duck_factor_chart(
+    duck_factors_df: pd.DataFrame,
+    region: str,
+    window_days: int,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> None:
+    """
+    Create a terminal-based duck factor time series chart.
+    
+    Args:
+        duck_factors_df: DataFrame with duck factor time series
+        region: Region code for the chart title
+        window_days: Rolling window size used
+        width: Chart width (defaults to terminal width)
+        height: Chart height (defaults to auto)
+    """
+    if duck_factors_df.empty:
+        print("No duck factor data available for charting")
+        return
+    
+    # Clear any previous plots
+    plt.clear_data()
+    plt.clear_figure()
+    
+    # Prepare data
+    dates = pd.to_datetime(duck_factors_df['date'])
+    factors = duck_factors_df['duck_factor'].tolist()
+    indices = list(range(len(factors)))
+    
+    # Create the plot
+    plt.plot(indices, factors, marker="hd", color="yellow")
+    
+    # Set title and labels
+    start_date = dates.min().strftime("%Y-%m-%d")
+    end_date = dates.max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    title = f"Duck Factor Evolution ({window_days}d window) - {country_name} ({start_date} to {end_date})"
+    
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("Duck Factor (0-1)")
+    
+    # Set chart size if specified
+    if width:
+        plt.plotsize(width, height or 15)
+    elif height:
+        plt.plotsize(None, height)
+    
+    # Configure x-axis labels
+    total_points = len(dates)
+    if total_points > 15:
+        step = max(1, total_points // 8)
+        x_indices = [i for i in range(0, total_points, step)]
+        x_labels = [dates.iloc[i].strftime("%Y-%m") for i in x_indices]
+        plt.xticks(x_indices, x_labels)
+    else:
+        x_labels = [d.strftime("%Y-%m-%d") for d in dates]
+        plt.xticks(indices, x_labels)
+    
+    # Display the chart
+    plt.show()
+    
+    # Print summary statistics
+    print(f"\nDuck Factor Summary:")
+    print(f"Average:    {factors and np.mean(factors):.3f}")
+    print(f"Range:      {factors and (np.max(factors) - np.min(factors)):.3f}")
+    print(f"Trend:      {_calculate_simple_trend(factors)}")
+    print(f"Data points: {len(factors)}")
+    print()
+
+
+def create_png_duck_factor_chart(
+    duck_factors_df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    window_days: int,
+    width: int = 12,
+    height: int = 6
+) -> None:
+    """
+    Create a PNG duck factor time series chart.
+    
+    Args:
+        duck_factors_df: DataFrame with duck factor time series
+        region: Region code for the chart title
+        output_path: Path to save the PNG file
+        window_days: Rolling window size used
+        width: Figure width in inches
+        height: Figure height in inches
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
+    
+    if duck_factors_df.empty:
+        print("No duck factor data available for charting")
+        return
+    
+    # Create figure and axis
+    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    
+    # Prepare data
+    dates = pd.to_datetime(duck_factors_df['date'])
+    factors = duck_factors_df['duck_factor']
+    
+    # Plot the time series
+    ax.plot(dates, factors, marker='o', markersize=3, linewidth=1.5, color='#FF6B35', alpha=0.8)
+    
+    # Add trend line
+    if len(factors) > 3:
+        try:
+            x_numeric = dates.astype(np.int64) / 10**9
+            trend_coef = np.polyfit(x_numeric, factors, 1)
+            trend_line = np.polyval(trend_coef, x_numeric)
+            ax.plot(dates, trend_line, '--', color='#2E86AB', linewidth=2, alpha=0.7, label=f'Trend')
+            ax.legend(loc='upper right')
+        except Exception:
+            pass
+    
+    # Set title and labels
+    start_date = dates.min().strftime("%Y-%m-%d")
+    end_date = dates.max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    ax.set_title(f"Duck Factor Evolution ({window_days}d window) - {country_name} ({start_date} to {end_date})", 
+                fontsize=14, fontweight='bold')
+    ax.set_xlabel("Date", fontsize=12)
+    ax.set_ylabel("Duck Factor (0-1)", fontsize=12)
+    
+    # Format x-axis
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=max(1, len(dates) // 240)))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    ax.xaxis.set_minor_locator(mdates.WeekdayLocator())
+    
+    # Rotate x-axis labels for better readability
+    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+    
+    # Add grid
+    ax.grid(True, alpha=0.3)
+    
+    # Set y-axis to show 0-1 range
+    ax.set_ylim(0, 1)
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Duck factor chart saved to: {output_path}")
+
+
+def create_png_seasonal_duck_chart(
+    seasonal_data: Dict[str, Any],
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 8
+) -> None:
+    """
+    Create a PNG chart showing seasonal duck factor patterns.
+    
+    Args:
+        seasonal_data: Seasonal analysis results from RollingDuckAnalyzer
+        region: Region code for the chart title
+        output_path: Path to save the PNG file
+        width: Figure width in inches
+        height: Figure height in inches
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
+    
+    if 'seasonal_patterns' not in seasonal_data or seasonal_data['seasonal_patterns'].empty:
+        print("No seasonal data available for charting")
+        return
+    
+    # Create subplots for different seasonal views
+    fig, ((ax1, ax2), (ax3, ax4)) = mpl_plt.subplots(2, 2, figsize=(width, height))
+    
+    seasonal_df = seasonal_data['seasonal_patterns']
+    monthly_df = seasonal_data.get('monthly_patterns', pd.DataFrame())
+    
+    # 1. Seasonal averages (top-left)
+    if not seasonal_df.empty:
+        seasons = seasonal_df['season']
+        means = seasonal_df['mean']
+        stds = seasonal_df['std']
+        
+        bars = ax1.bar(seasons, means, yerr=stds, capsize=5, color=['#A8DADC', '#457B9D', '#1D3557', '#F1C40F'])
+        ax1.set_title('Duck Factor by Season', fontweight='bold')
+        ax1.set_ylabel('Duck Factor')
+        ax1.set_ylim(0, max(means) * 1.2)
+        ax1.grid(True, alpha=0.3)
+    
+    # 2. Monthly patterns (top-right)
+    if not monthly_df.empty:
+        months = monthly_df['month']
+        month_means = monthly_df['mean']
+        month_stds = monthly_df['std']
+        
+        ax2.errorbar(months, month_means, yerr=month_stds, marker='o', capsize=3, 
+                    color='#E63946', linewidth=2, markersize=6)
+        ax2.set_title('Duck Factor by Month', fontweight='bold')
+        ax2.set_xlabel('Month')
+        ax2.set_ylabel('Duck Factor')
+        ax2.set_xticks(range(1, 13))
+        ax2.set_xticklabels(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+        ax2.grid(True, alpha=0.3)
+        ax2.set_ylim(0, max(month_means) * 1.2)
+    
+    # 3. Seasonal range visualization (bottom-left)
+    if not seasonal_df.empty:
+        seasonal_range = seasonal_data.get('seasonal_range', 0)
+        peak_season = seasonal_data.get('peak_season', 'Unknown')
+        low_season = seasonal_data.get('low_season', 'Unknown')
+        
+        # Simple text display of key metrics
+        ax3.text(0.1, 0.8, f"Peak Season: {peak_season}", fontsize=12, transform=ax3.transAxes)
+        ax3.text(0.1, 0.6, f"Low Season: {low_season}", fontsize=12, transform=ax3.transAxes)
+        ax3.text(0.1, 0.4, f"Seasonal Range: {seasonal_range:.3f}", fontsize=12, transform=ax3.transAxes)
+        ax3.text(0.1, 0.2, f"Peak/Low Ratio: {means.max()/means.min():.2f}x" if means.min() > 0 else "Peak/Low Ratio: N/A", 
+                fontsize=12, transform=ax3.transAxes)
+        ax3.set_title('Seasonal Metrics', fontweight='bold')
+        ax3.axis('off')
+    
+    # 4. Season comparison polar plot (bottom-right)
+    if not seasonal_df.empty and len(seasonal_df) == 4:
+        # Create a simple radar-style comparison
+        angles = np.linspace(0, 2 * np.pi, len(seasons), endpoint=False).tolist()
+        values = means.tolist()
+        
+        # Complete the circle
+        angles += angles[:1]
+        values += values[:1]
+        
+        ax4 = mpl_plt.subplot(2, 2, 4, projection='polar')
+        ax4.plot(angles, values, 'o-', linewidth=2, color='#2A9D8F')
+        ax4.fill(angles, values, alpha=0.25, color='#2A9D8F')
+        ax4.set_xticks(angles[:-1])
+        ax4.set_xticklabels(seasons)
+        ax4.set_title('Seasonal Duck Factor Pattern', fontweight='bold', pad=20)
+        ax4.set_ylim(0, max(values) * 1.1)
+    
+    # Overall title
+    country_name = _get_country_name(region)
+    fig.suptitle(f'Seasonal Duck Factor Analysis - {country_name}', fontsize=16, fontweight='bold')
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Seasonal duck factor chart saved to: {output_path}")
+
+
+def _calculate_simple_trend(values: list) -> str:
+    """Calculate a simple trend description for a list of values."""
+    if len(values) < 3:
+        return "Insufficient data"
+    
+    try:
+        x = np.arange(len(values))
+        slope = np.polyfit(x, values, 1)[0]
+        
+        if abs(slope) < 0.001:
+            return "Stable"
+        elif slope > 0.01:
+            return "Strong upward"
+        elif slope > 0.005:
+            return "Moderate upward"
+        elif slope > 0:
+            return "Slight upward"
+        elif slope < -0.01:
+            return "Strong downward"
+        elif slope < -0.005:
+            return "Moderate downward"
+        else:
+            return "Slight downward"
+    except Exception:
+        return "Unable to calculate"

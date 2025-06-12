@@ -10,6 +10,18 @@ from .charts.terminal import (
     create_terminal_daily_average_chart,
     create_hourly_analysis_chart,
     create_hourly_workday_chart,
+    create_png_price_chart,
+    create_png_hourly_analysis_chart,
+    create_png_hourly_workday_chart,
+    create_terminal_duck_factor_chart,
+    create_png_duck_factor_chart,
+    create_png_seasonal_duck_chart,
+)
+from .analysis.rolling_duck import analyze_rolling_duck_patterns
+from .utils.filename_generator import (
+    generate_duck_factor_filename,
+    generate_price_chart_filename,
+    get_multi_window_filenames,
 )
 
 
@@ -32,7 +44,7 @@ def cli(ctx, data_source: str, cache_dir: Optional[str]):
 @click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
 @click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
 @click.option("--end-date", required=True, help="End date (YYYY-MM-DD)")
-@click.option("--output", "-o", help="Output file path for chart")
+@click.option("--output", "-o", help="Output PNG file path (enables PNG mode, auto-adds .png extension)")
 @click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
 @click.option(
     "--chart-type",
@@ -51,8 +63,8 @@ hourly-workday: Workday-only duck curve pattern
 all: Display line, daily, and summary together
 """,
 )
-@click.option("--width", type=int, help="Chart width (terminal columns)")
-@click.option("--height", type=int, help="Chart height (terminal rows)")
+@click.option("--width", type=int, help="Chart width (terminal columns or PNG inches)")
+@click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")
 @click.pass_context
 def chart(
     ctx,
@@ -90,24 +102,56 @@ def chart(
             f"Price range: {df['price'].min():.2f} - {df['price'].max():.2f} {df['unit'].iloc[0]}"
         )
 
-        # Generate charts based on chart_type
+        # Generate charts based on chart_type and output format
         if output:
-            click.echo(f"Note: File output not yet implemented, displaying in terminal")
+            # PNG output mode - use smart filename generation if no extension provided
+            if not output.lower().endswith('.png'):
+                if '.' not in output:
+                    # User provided just a base name, generate smart filename
+                    output = generate_price_chart_filename(region, start_date, end_date, chart_type)
+                else:
+                    output += '.png'
+            
+            try:
+                if chart_type == "line":
+                    create_png_price_chart(df, region, output, width=width or 12, height=height or 6)
+                elif chart_type == "hourly":
+                    create_png_hourly_analysis_chart(df, region, output, width=width or 12, height=height or 6)
+                elif chart_type == "hourly-workday":
+                    create_png_hourly_workday_chart(df, region, output, width=width or 12, height=height or 6)
+                elif chart_type == "all":
+                    # Create multiple PNG files with smart names
+                    line_output = generate_price_chart_filename(region, start_date, end_date, "line")
+                    hourly_output = generate_price_chart_filename(region, start_date, end_date, "hourly")
+                    workday_output = generate_price_chart_filename(region, start_date, end_date, "hourly-workday")
+                    
+                    create_png_price_chart(df, region, line_output, width=width or 12, height=height or 6)
+                    create_png_hourly_analysis_chart(df, region, hourly_output, width=width or 12, height=height or 6)
+                    create_png_hourly_workday_chart(df, region, workday_output, width=width or 12, height=height or 6)
+                else:
+                    click.echo(f"PNG output not supported for chart type: {chart_type}")
+                    click.echo("Supported PNG chart types: line, hourly, hourly-workday, all")
+                    ctx.exit(1)
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
+                ctx.exit(1)
+        else:
+            # Terminal output mode (default)
+            if chart_type == "line" or chart_type == "all":
+                create_terminal_price_chart(df, region, width=width, height=height)
 
-        if chart_type == "line" or chart_type == "all":
-            create_terminal_price_chart(df, region, width=width, height=height)
+            if chart_type == "daily" or chart_type == "all":
+                create_terminal_daily_average_chart(df, region)
 
-        if chart_type == "daily" or chart_type == "all":
-            create_terminal_daily_average_chart(df, region)
-
-        if chart_type == "summary" or chart_type == "all":
-            create_terminal_price_summary(df, region)
-        
-        if chart_type == "hourly":
-            create_hourly_analysis_chart(df, region)
-        
-        if chart_type == "hourly-workday":
-            create_hourly_workday_chart(df, region)
+            if chart_type == "summary" or chart_type == "all":
+                create_terminal_price_summary(df, region)
+            
+            if chart_type == "hourly":
+                create_hourly_analysis_chart(df, region)
+            
+            if chart_type == "hourly-workday":
+                create_hourly_workday_chart(df, region)
 
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
@@ -185,6 +229,249 @@ def clear_cache(ctx, region: Optional[str]):
         click.echo(f"Cleared cache for region: {region}")
     else:
         click.echo("Cleared all cached data")
+
+
+@cli.command()
+@click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
+@click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
+@click.option("--end-date", required=True, help="End date (YYYY-MM-DD)")
+@click.option("--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)")
+@click.option("--step", "-s", default="7d", help="Step size between calculations (e.g., 1d, 7d)")
+@click.option("--output", "-o", help="Output PNG file path (enables PNG mode)")
+@click.option("--chart-type", "-t", 
+              type=click.Choice(["time-series", "seasonal", "multi-window", "all"]),
+              default="time-series",
+              help="Chart type: time-series, seasonal, multi-window, or all")
+@click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
+@click.option("--width", type=int, help="Chart width (terminal columns or PNG inches)")
+@click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")
+@click.pass_context
+def duck_factor(
+    ctx,
+    region: str,
+    start_date: str,
+    end_date: str,
+    window: str,
+    step: str,
+    output: Optional[str],
+    chart_type: str,
+    no_cache: bool,
+    width: Optional[int],
+    height: Optional[int],
+):
+    """Analyze duck curve evolution over time with rolling window analysis."""
+    try:
+        # Parse dates
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        
+        # Parse window and step sizes
+        window_days = _parse_time_period(window)
+        step_days = _parse_time_period(step)
+        
+        # Create data source
+        data_source = DataSourceFactory.create_data_source(
+            ctx.obj["data_source"], ctx.obj["cache_dir"]
+        )
+        
+        click.echo(f"Fetching price data for {region} from {start_date} to {end_date}...")
+        click.echo(f"Rolling window: {window_days} days, step: {step_days} days")
+        
+        # Get price data
+        df = data_source.get_spot_prices(
+            region, start_dt, end_dt, use_cache=not no_cache
+        )
+        
+        click.echo(f"Retrieved {len(df)} hourly price points")
+        
+        # Perform rolling duck factor analysis
+        click.echo("Analyzing duck curve evolution...")
+        analysis_results = analyze_rolling_duck_patterns(df, region, window_days, step_days)
+        
+        if 'error' in analysis_results:
+            click.echo(f"Analysis error: {analysis_results['error']}", err=True)
+            ctx.exit(1)
+        
+        duck_factors = analysis_results['duck_factors']
+        seasonal_data = analysis_results['seasonal_patterns']
+        trends = analysis_results['trends']
+        yoy_data = analysis_results['year_over_year']
+        
+        click.echo(f"Generated {len(duck_factors)} duck factor data points")
+        
+        # Display analysis summary
+        _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data)
+        
+        # Generate charts
+        if output:
+            # PNG output mode - use smart filename generation
+            try:
+                if chart_type == "time-series":
+                    if not output.lower().endswith('.png'):
+                        if '.' not in output:
+                            output = generate_duck_factor_filename(region, start_date, end_date, window_days, "timeseries")
+                        else:
+                            output += '.png'
+                    create_png_duck_factor_chart(duck_factors, region, output, window_days, 
+                                                width=width or 12, height=height or 6)
+                elif chart_type == "seasonal":
+                    if not output.lower().endswith('.png'):
+                        if '.' not in output:
+                            output = generate_duck_factor_filename(region, start_date, end_date, window_days, "seasonal")
+                        else:
+                            output += '.png'
+                    create_png_seasonal_duck_chart(seasonal_data, region, output,
+                                                  width=width or 12, height=height or 8)
+                elif chart_type == "multi-window":
+                    # Create multiple window analysis with smart filenames
+                    from .analysis.rolling_duck import RollingDuckAnalyzer
+                    analyzer = RollingDuckAnalyzer(region)
+                    multi_results = analyzer.multi_window_analysis(df, [7, 30, 90], step_days)
+                    
+                    window_filenames = get_multi_window_filenames(region, start_date, end_date, [7, 30, 90])
+                    
+                    for window_key, window_df in multi_results.items():
+                        window_output = window_filenames[window_key]
+                        create_png_duck_factor_chart(window_df, region, window_output, 
+                                                    int(window_key[:-1]), width=width or 12, height=height or 6)
+                elif chart_type == "all":
+                    # Create all chart types with smart filenames
+                    timeseries_output = generate_duck_factor_filename(region, start_date, end_date, window_days, "timeseries")
+                    seasonal_output = generate_duck_factor_filename(region, start_date, end_date, window_days, "seasonal")
+                    
+                    create_png_duck_factor_chart(duck_factors, region, timeseries_output, 
+                                                window_days, width=width or 12, height=height or 6)
+                    create_png_seasonal_duck_chart(seasonal_data, region, seasonal_output,
+                                                  width=width or 12, height=height or 8)
+                    
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
+                ctx.exit(1)
+        else:
+            # Terminal output mode (default)
+            if chart_type == "time-series" or chart_type == "all":
+                create_terminal_duck_factor_chart(duck_factors, region, window_days, 
+                                                 width=width, height=height)
+            
+            # Additional terminal analysis summaries for other chart types
+            if chart_type == "seasonal" or chart_type == "all":
+                _display_seasonal_analysis(seasonal_data, region)
+            
+            if chart_type == "multi-window" or chart_type == "all":
+                _display_multi_window_analysis(df, region, step_days)
+        
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        ctx.exit(1)
+    except Exception as e:
+        click.echo(f"Unexpected error: {e}", err=True)
+        ctx.exit(1)
+
+
+def _parse_time_period(period_str: str) -> int:
+    """Parse time period string like '30d', '7d' into number of days."""
+    period_str = period_str.lower().strip()
+    
+    if period_str.endswith('d'):
+        return int(period_str[:-1])
+    elif period_str.endswith('w'):
+        return int(period_str[:-1]) * 7
+    elif period_str.endswith('m'):
+        return int(period_str[:-1]) * 30  # Approximate
+    elif period_str.endswith('y'):
+        return int(period_str[:-1]) * 365  # Approximate
+    else:
+        # Assume it's just a number of days
+        return int(period_str)
+
+
+def _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data):
+    """Display a summary of duck factor analysis results."""
+    click.echo("\n" + "="*60)
+    click.echo("DUCK FACTOR ANALYSIS SUMMARY")
+    click.echo("="*60)
+    
+    if not duck_factors.empty:
+        avg_factor = duck_factors['duck_factor'].mean()
+        min_factor = duck_factors['duck_factor'].min()
+        max_factor = duck_factors['duck_factor'].max()
+        
+        click.echo(f"Average Duck Factor: {avg_factor:.3f}")
+        click.echo(f"Range: {min_factor:.3f} - {max_factor:.3f}")
+        
+        # Trend information
+        if 'trend_slope_per_year' in trends:
+            slope = trends['trend_slope_per_year']
+            r_squared = trends.get('trend_r_squared', 0)
+            classification = trends.get('trend_classification', 'Unknown')
+            
+            click.echo(f"Trend: {classification} ({slope:+.4f}/year, R²={r_squared:.3f})")
+        
+        # Seasonal information
+        if seasonal_data and 'peak_season' in seasonal_data:
+            peak_season = seasonal_data['peak_season']
+            low_season = seasonal_data['low_season']
+            seasonal_range = seasonal_data.get('seasonal_range', 0)
+            
+            click.echo(f"Seasonal Pattern: Peak in {peak_season}, Low in {low_season}")
+            click.echo(f"Seasonal Range: {seasonal_range:.3f}")
+        
+        # Year-over-year
+        if yoy_data and 'avg_annual_change' in yoy_data:
+            avg_change = yoy_data['avg_annual_change']
+            click.echo(f"Average Annual Change: {avg_change:+.1%}")
+    
+    click.echo("="*60)
+
+
+def _display_seasonal_analysis(seasonal_data, region):
+    """Display seasonal analysis in terminal format."""
+    if not seasonal_data or seasonal_data.get('seasonal_patterns', pd.DataFrame()).empty:
+        click.echo("No seasonal data available")
+        return
+    
+    click.echo(f"\n{'='*50}")
+    click.echo(f"SEASONAL DUCK FACTOR ANALYSIS - {_get_country_name(region)}")
+    click.echo(f"{'='*50}")
+    
+    seasonal_df = seasonal_data['seasonal_patterns']
+    for _, row in seasonal_df.iterrows():
+        click.echo(f"{row['season']:<8}: {row['mean']:.3f} ±{row['std']:.3f} ({row['count']} samples)")
+    
+    if 'peak_season' in seasonal_data:
+        click.echo(f"\nPeak Season: {seasonal_data['peak_season']}")
+        click.echo(f"Low Season: {seasonal_data['low_season']}")
+        click.echo(f"Seasonal Range: {seasonal_data.get('seasonal_range', 0):.3f}")
+
+
+def _display_multi_window_analysis(df, region, step_days):
+    """Display multi-window analysis summary."""
+    from .analysis.rolling_duck import RollingDuckAnalyzer
+    
+    analyzer = RollingDuckAnalyzer(region)
+    multi_results = analyzer.multi_window_analysis(df, [7, 30, 90], step_days)
+    
+    click.echo(f"\n{'='*50}")
+    click.echo(f"MULTI-WINDOW DUCK FACTOR COMPARISON")
+    click.echo(f"{'='*50}")
+    
+    for window_key, window_df in multi_results.items():
+        if not window_df.empty:
+            avg_factor = window_df['duck_factor'].mean()
+            volatility = window_df['duck_factor'].std()
+            click.echo(f"{window_key:<8}: avg={avg_factor:.3f}, volatility={volatility:.3f}")
+
+
+def _get_country_name(region_code: str) -> str:
+    """Get country name from region code."""
+    country_names = {
+        'AT': 'Austria', 'BE': 'Belgium', 'CH': 'Switzerland', 'CZ': 'Czech Republic',
+        'DE': 'Germany', 'DK': 'Denmark', 'ES': 'Spain', 'FR': 'France',
+        'IT': 'Italy', 'NL': 'Netherlands', 'NO': 'Norway', 'PL': 'Poland',
+        'SE': 'Sweden', 'UK': 'United Kingdom'
+    }
+    return country_names.get(region_code.upper(), region_code)
 
 
 if __name__ == "__main__":
