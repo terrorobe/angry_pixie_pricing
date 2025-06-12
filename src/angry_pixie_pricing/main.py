@@ -4,6 +4,13 @@ import click
 from typing import Optional
 from datetime import datetime
 from .data.factory import DataSourceFactory
+from .utils.date_parser import parse_date_range, format_date_range_description
+from .utils.cli_options import (
+    add_standard_options,
+    add_chart_options,
+    add_duck_factor_options,
+    add_negative_pricing_options,
+)
 from .charts.terminal import (
     create_terminal_price_chart,
     create_terminal_price_summary,
@@ -16,8 +23,11 @@ from .charts.terminal import (
     create_terminal_duck_factor_chart,
     create_png_duck_factor_chart,
     create_png_seasonal_duck_chart,
+    create_terminal_negative_pricing_chart,
+    create_png_negative_pricing_chart,
 )
 from .analysis.rolling_duck import analyze_rolling_duck_patterns
+from .analysis.negative_pricing import analyze_negative_pricing_comprehensive
 from .utils.filename_generator import (
     generate_duck_factor_filename,
     generate_price_chart_filename,
@@ -41,36 +51,14 @@ def cli(ctx, data_source: str, cache_dir: Optional[str]):
 
 
 @cli.command()
-@click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
-@click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
-@click.option("--end-date", required=True, help="End date (YYYY-MM-DD)")
-@click.option("--output", "-o", help="Output PNG file path (enables PNG mode, auto-adds .png extension)")
-@click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
-@click.option(
-    "--chart-type",
-    "-t",
-    type=click.Choice(["line", "daily", "summary", "hourly", "hourly-workday", "all"]),
-    default="line",
-    help="""\
-Chart type options:
-
-\b
-line: Hourly price timeline with braille markers
-daily: Bar chart of daily average prices  
-summary: Statistical summary with price ranges
-hourly: Duck curve analysis (workdays vs weekends)
-hourly-workday: Workday-only duck curve pattern
-all: Display line, daily, and summary together
-""",
-)
-@click.option("--width", type=int, help="Chart width (terminal columns or PNG inches)")
-@click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")
+@add_standard_options
+@add_chart_options
 @click.pass_context
 def chart(
     ctx,
     region: str,
     start_date: str,
-    end_date: str,
+    end_date: Optional[str],
     output: Optional[str],
     no_cache: bool,
     chart_type: str,
@@ -79,9 +67,13 @@ def chart(
 ):
     """Generate hourly electricity price charts for a region and time span."""
     try:
-        # Parse dates
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        # Parse dates with flexible format support
+        start_dt, end_dt = parse_date_range(start_date, end_date)
+        
+        # Format dates for display and filename generation
+        start_date_str = start_dt.strftime("%Y-%m-%d")
+        end_date_str = end_dt.strftime("%Y-%m-%d")
+        date_description = format_date_range_description(start_dt, end_dt)
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
@@ -89,7 +81,7 @@ def chart(
         )
 
         click.echo(
-            f"Fetching price data for {region} from {start_date} to {end_date}..."
+            f"Fetching price data for {region} from {date_description}..."
         )
 
         # Get price data
@@ -108,7 +100,7 @@ def chart(
             if not output.lower().endswith('.png'):
                 if '.' not in output:
                     # User provided just a base name, generate smart filename
-                    output = generate_price_chart_filename(region, start_date, end_date, chart_type)
+                    output = generate_price_chart_filename(region, start_date_str, end_date_str, chart_type)
                 else:
                     output += '.png'
             
@@ -121,9 +113,9 @@ def chart(
                     create_png_hourly_workday_chart(df, region, output, width=width or 12, height=height or 6)
                 elif chart_type == "all":
                     # Create multiple PNG files with smart names
-                    line_output = generate_price_chart_filename(region, start_date, end_date, "line")
-                    hourly_output = generate_price_chart_filename(region, start_date, end_date, "hourly")
-                    workday_output = generate_price_chart_filename(region, start_date, end_date, "hourly-workday")
+                    line_output = generate_price_chart_filename(region, start_date_str, end_date_str, "line")
+                    hourly_output = generate_price_chart_filename(region, start_date_str, end_date_str, "hourly")
+                    workday_output = generate_price_chart_filename(region, start_date_str, end_date_str, "hourly-workday")
                     
                     create_png_price_chart(df, region, line_output, width=width or 12, height=height or 6)
                     create_png_hourly_analysis_chart(df, region, hourly_output, width=width or 12, height=height or 6)
@@ -164,18 +156,18 @@ def chart(
 @cli.command()
 @click.option("--usage-data", required=True, help="Path to smart meter usage data file")
 @click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
-@click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
-@click.option("--end-date", required=True, help="End date (YYYY-MM-DD)")
+@click.option("--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)")
+@click.option("--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today")
 @click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
 @click.pass_context
 def calculate(
-    ctx, usage_data: str, region: str, start_date: str, end_date: str, no_cache: bool
+    ctx, usage_data: str, region: str, start_date: str, end_date: Optional[str], no_cache: bool
 ):
     """Calculate average electricity costs based on smart meter usage data."""
     try:
-        # Parse dates
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        # Parse dates with flexible format support
+        start_dt, end_dt = parse_date_range(start_date, end_date)
+        date_description = format_date_range_description(start_dt, end_dt)
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
@@ -183,7 +175,7 @@ def calculate(
         )
 
         click.echo(f"Calculating costs for {region} using {usage_data}")
-        click.echo(f"Fetching price data from {start_date} to {end_date}...")
+        click.echo(f"Fetching price data from {date_description}...")
 
         # Get price data
         df = data_source.get_spot_prices(
@@ -232,25 +224,14 @@ def clear_cache(ctx, region: Optional[str]):
 
 
 @cli.command()
-@click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
-@click.option("--start-date", required=True, help="Start date (YYYY-MM-DD)")
-@click.option("--end-date", required=True, help="End date (YYYY-MM-DD)")
-@click.option("--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)")
-@click.option("--step", "-s", default="7d", help="Step size between calculations (e.g., 1d, 7d)")
-@click.option("--output", "-o", help="Output PNG file path (enables PNG mode)")
-@click.option("--chart-type", "-t", 
-              type=click.Choice(["time-series", "seasonal", "multi-window", "all"]),
-              default="time-series",
-              help="Chart type: time-series, seasonal, multi-window, or all")
-@click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
-@click.option("--width", type=int, help="Chart width (terminal columns or PNG inches)")
-@click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")
+@add_standard_options
+@add_duck_factor_options
 @click.pass_context
 def duck_factor(
     ctx,
     region: str,
     start_date: str,
-    end_date: str,
+    end_date: Optional[str],
     window: str,
     step: str,
     output: Optional[str],
@@ -261,9 +242,13 @@ def duck_factor(
 ):
     """Analyze duck curve evolution over time with rolling window analysis."""
     try:
-        # Parse dates
-        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        # Parse dates with flexible format support
+        start_dt, end_dt = parse_date_range(start_date, end_date)
+        
+        # Format dates for display and filename generation
+        start_date_str = start_dt.strftime("%Y-%m-%d")
+        end_date_str = end_dt.strftime("%Y-%m-%d")
+        date_description = format_date_range_description(start_dt, end_dt)
         
         # Parse window and step sizes
         window_days = _parse_time_period(window)
@@ -274,7 +259,7 @@ def duck_factor(
             ctx.obj["data_source"], ctx.obj["cache_dir"]
         )
         
-        click.echo(f"Fetching price data for {region} from {start_date} to {end_date}...")
+        click.echo(f"Fetching price data for {region} from {date_description}...")
         click.echo(f"Rolling window: {window_days} days, step: {step_days} days")
         
         # Get price data
@@ -309,7 +294,7 @@ def duck_factor(
                 if chart_type == "time-series":
                     if not output.lower().endswith('.png'):
                         if '.' not in output:
-                            output = generate_duck_factor_filename(region, start_date, end_date, window_days, "timeseries")
+                            output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "timeseries")
                         else:
                             output += '.png'
                     create_png_duck_factor_chart(duck_factors, region, output, window_days, 
@@ -317,7 +302,7 @@ def duck_factor(
                 elif chart_type == "seasonal":
                     if not output.lower().endswith('.png'):
                         if '.' not in output:
-                            output = generate_duck_factor_filename(region, start_date, end_date, window_days, "seasonal")
+                            output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "seasonal")
                         else:
                             output += '.png'
                     create_png_seasonal_duck_chart(seasonal_data, region, output,
@@ -328,7 +313,7 @@ def duck_factor(
                     analyzer = RollingDuckAnalyzer(region)
                     multi_results = analyzer.multi_window_analysis(df, [7, 30, 90], step_days)
                     
-                    window_filenames = get_multi_window_filenames(region, start_date, end_date, [7, 30, 90])
+                    window_filenames = get_multi_window_filenames(region, start_date_str, end_date_str, [7, 30, 90])
                     
                     for window_key, window_df in multi_results.items():
                         window_output = window_filenames[window_key]
@@ -336,8 +321,8 @@ def duck_factor(
                                                     int(window_key[:-1]), width=width or 12, height=height or 6)
                 elif chart_type == "all":
                     # Create all chart types with smart filenames
-                    timeseries_output = generate_duck_factor_filename(region, start_date, end_date, window_days, "timeseries")
-                    seasonal_output = generate_duck_factor_filename(region, start_date, end_date, window_days, "seasonal")
+                    timeseries_output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "timeseries")
+                    seasonal_output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "seasonal")
                     
                     create_png_duck_factor_chart(duck_factors, region, timeseries_output, 
                                                 window_days, width=width or 12, height=height or 6)
@@ -461,6 +446,152 @@ def _display_multi_window_analysis(df, region, step_days):
             avg_factor = window_df['duck_factor'].mean()
             volatility = window_df['duck_factor'].std()
             click.echo(f"{window_key:<8}: avg={avg_factor:.3f}, volatility={volatility:.3f}")
+
+
+@cli.command()
+@add_standard_options
+@add_negative_pricing_options
+@click.pass_context
+def negative_pricing(
+    ctx,
+    region: str,
+    start_date: str,
+    end_date: Optional[str],
+    threshold: float,
+    output: Optional[str],
+    no_cache: bool,
+    width: Optional[int],
+    height: Optional[int],
+):
+    """Analyze negative and near-zero electricity pricing patterns with solar potential estimates."""
+    try:
+        # Parse dates with flexible format support
+        start_dt, end_dt = parse_date_range(start_date, end_date)
+        
+        # Format dates for display and filename generation
+        start_date_str = start_dt.strftime("%Y-%m-%d")
+        end_date_str = end_dt.strftime("%Y-%m-%d")
+        date_description = format_date_range_description(start_dt, end_dt)
+        
+        # Create data source
+        data_source = DataSourceFactory.create_data_source(
+            ctx.obj["data_source"], ctx.obj["cache_dir"]
+        )
+        
+        click.echo(f"Fetching price data for {region} from {date_description}...")
+        click.echo(f"Near-zero threshold: {threshold} EUR/MWh")
+        
+        # Get price data
+        df = data_source.get_spot_prices(
+            region, start_dt, end_dt, use_cache=not no_cache
+        )
+        
+        click.echo(f"Retrieved {len(df)} hourly price points")
+        
+        # Perform negative pricing analysis
+        click.echo("Analyzing negative pricing patterns...")
+        analysis_results = analyze_negative_pricing_comprehensive(df, region, threshold)
+        
+        if 'error' in analysis_results:
+            click.echo(f"Analysis error: {analysis_results['error']}", err=True)
+            ctx.exit(1)
+        
+        metrics = analysis_results['overall_metrics']
+        seasonal_data = analysis_results['seasonal_patterns']
+        
+        # Display analysis summary
+        _display_negative_pricing_summary(metrics, seasonal_data, region)
+        
+        # Generate charts
+        if output:
+            # PNG output mode
+            if not output.lower().endswith('.png'):
+                if '.' not in output:
+                    output = f"images/negative-pricing_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                else:
+                    output += '.png'
+            
+            try:
+                create_png_negative_pricing_chart(df, region, output, width=width or 12, height=height or 8)
+            except ImportError as e:
+                click.echo(f"Error: {e}", err=True)
+                click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
+                ctx.exit(1)
+        else:
+            # Terminal output mode (default)
+            create_terminal_negative_pricing_chart(df, region, width=width, height=height)
+        
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        ctx.exit(1)
+    except Exception as e:
+        click.echo(f"Unexpected error: {e}", err=True)
+        ctx.exit(1)
+
+
+def _display_negative_pricing_summary(metrics, seasonal_data, region):
+    """Display comprehensive negative pricing analysis summary."""
+    click.echo("\n" + "="*70)
+    click.echo("NEGATIVE PRICING ANALYSIS SUMMARY")
+    click.echo("="*70)
+    
+    # Overall statistics
+    click.echo(f"Total negative hours: {metrics.negative_hours} ({metrics.negative_percentage:.1f}%)")
+    click.echo(f"Total near-zero hours: {metrics.near_zero_hours} ({metrics.near_zero_percentage:.1f}%)")
+    click.echo(f"Average negative hours per day: {metrics.avg_hours_per_day:.1f}")
+    click.echo(f"Maximum consecutive negative hours: {metrics.max_consecutive_hours}")
+    
+    # Peak negative pricing hours
+    if metrics.hourly_breakdown:
+        peak_hour = max(metrics.hourly_breakdown.keys(), 
+                       key=lambda h: metrics.hourly_breakdown[h].get('negative_percentage', 0))
+        peak_percentage = metrics.hourly_breakdown[peak_hour]['negative_percentage']
+        click.echo(f"Peak negative pricing hour: {peak_hour}:00 ({peak_percentage:.1f}% of the time)")
+    
+    # Monthly insights
+    if metrics.monthly_breakdown:
+        monthly_avg = [(month, data['avg_hours_per_day']) for month, data in metrics.monthly_breakdown.items()]
+        monthly_avg.sort(key=lambda x: x[1], reverse=True)
+        
+        best_month = monthly_avg[0]
+        worst_month = monthly_avg[-1]
+        
+        month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        click.echo(f"Best month for negative pricing: {month_names[best_month[0]]} ({best_month[1]:.1f} hours/day)")
+        click.echo(f"Worst month for negative pricing: {month_names[worst_month[0]]} ({worst_month[1]:.1f} hours/day)")
+    
+    # Solar potential analysis
+    if 'yearly_summary' in seasonal_data:
+        yearly = seasonal_data['yearly_summary']
+        click.echo(f"\nSOLAR POTENTIAL ANALYSIS (based on approximate solar irradiation data):")
+        click.echo(f"Current average: {yearly['avg_current_hours_per_day']:.1f} hours/day")
+        click.echo(f"Theoretical maximum: {yearly['avg_theoretical_max_hours_per_day']:.1f} hours/day")
+        click.echo(f"Overall progress: {yearly['overall_progress_percentage']:.1f}%")
+        
+        remaining = yearly['avg_theoretical_max_hours_per_day'] - yearly['avg_current_hours_per_day']
+        click.echo(f"Remaining potential: {remaining:.1f} hours/day")
+        click.echo(f"NOTE: Solar potential estimates based on EU PVGIS, Global Solar Atlas, and Copernicus data")
+    
+    # Regional insights
+    click.echo(f"\nREGIONAL CONTEXT ({_get_country_name(region)}):")
+    
+    # Show seasonal variation
+    if len(seasonal_data) > 1:  # More than just yearly_summary
+        summer_months = [6, 7, 8]  # June, July, August
+        winter_months = [12, 1, 2]  # Dec, Jan, Feb
+        
+        summer_avg = np.mean([seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
+                             for m in summer_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']])
+        winter_avg = np.mean([seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
+                             for m in winter_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']])
+        
+        if not np.isnan(summer_avg) and not np.isnan(winter_avg):
+            seasonal_ratio = summer_avg / winter_avg if winter_avg > 0 else float('inf')
+            click.echo(f"Summer vs Winter ratio: {seasonal_ratio:.1f}x (Summer: {summer_avg:.1f}h, Winter: {winter_avg:.1f}h)")
+    
+    click.echo("="*70)
 
 
 def _get_country_name(region_code: str) -> str:

@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional, Dict, Any
 from ..analysis.hourly import HourlyPriceAnalyzer
 from ..analysis.rolling_duck import RollingDuckAnalyzer
+from ..analysis.negative_pricing import NegativePricingAnalyzer
 
 # Try to import matplotlib for PNG export, fall back gracefully
 try:
@@ -807,6 +808,184 @@ def create_png_seasonal_duck_chart(
     mpl_plt.close(fig)
     
     print(f"Seasonal duck factor chart saved to: {output_path}")
+
+
+def create_terminal_negative_pricing_chart(
+    df: pd.DataFrame,
+    region: str,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> None:
+    """
+    Create a terminal chart showing negative pricing patterns by hour of day.
+    
+    Args:
+        df: DataFrame with price data
+        region: Region code
+        width: Chart width
+        height: Chart height
+    """
+    analyzer = NegativePricingAnalyzer(region)
+    metrics = analyzer.analyze_negative_pricing_patterns(df)
+    
+    if not metrics.hourly_breakdown:
+        print("No data available for negative pricing analysis")
+        return
+    
+    # Clear any previous plots
+    plt.clear_data()
+    plt.clear_figure()
+    
+    # Prepare hourly data
+    hours = list(range(24))
+    negative_percentages = [metrics.hourly_breakdown.get(h, {}).get('negative_percentage', 0) for h in hours]
+    near_zero_percentages = [metrics.hourly_breakdown.get(h, {}).get('near_zero_percentage', 0) for h in hours]
+    
+    # Create the plot
+    plt.bar(hours, negative_percentages, marker="fhd", color="red", label="Negative Prices")
+    plt.bar(hours, near_zero_percentages, marker="fhd", color="orange", label="Near-Zero Prices")
+    
+    # Set title and labels
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    title = f"Negative Pricing Patterns - {country_name} ({start_date} to {end_date})"
+    
+    plt.title(title)
+    plt.xlabel("Hour of Day")
+    plt.ylabel("Percentage of Hours (%)")
+    
+    # Set chart size if specified
+    if width:
+        plt.plotsize(width, height or 15)
+    elif height:
+        plt.plotsize(None, height)
+    
+    # Configure x-axis
+    plt.xticks(range(0, 24, 4), [f"{h}:00" for h in range(0, 24, 4)])
+    
+    # Display the chart
+    plt.show()
+    
+    # Print summary
+    print(f"\nNegative Pricing Summary:")
+    print(f"Total negative hours: {metrics.negative_hours} ({metrics.negative_percentage:.1f}%)")
+    print(f"Average hours/day: {metrics.avg_hours_per_day:.1f}")
+    print(f"Max consecutive: {metrics.max_consecutive_hours} hours")
+    print()
+
+
+def create_png_negative_pricing_chart(
+    df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 8
+) -> None:
+    """
+    Create a comprehensive PNG chart for negative pricing analysis.
+    
+    Args:
+        df: DataFrame with price data
+        region: Region code
+        output_path: Path to save PNG file
+        width: Figure width
+        height: Figure height
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
+    
+    analyzer = NegativePricingAnalyzer(region)
+    metrics = analyzer.analyze_negative_pricing_patterns(df)
+    seasonal_data = analyzer.analyze_seasonal_patterns(df)
+    
+    # Create subplots
+    fig, ((ax1, ax2), (ax3, ax4)) = mpl_plt.subplots(2, 2, figsize=(width, height))
+    
+    # 1. Hourly patterns (top-left)
+    if metrics.hourly_breakdown:
+        hours = list(range(24))
+        negative_pct = [metrics.hourly_breakdown.get(h, {}).get('negative_percentage', 0) for h in hours]
+        near_zero_pct = [metrics.hourly_breakdown.get(h, {}).get('near_zero_percentage', 0) for h in hours]
+        
+        ax1.bar(hours, negative_pct, alpha=0.7, color='red', label='Negative Prices')
+        ax1.bar(hours, near_zero_pct, alpha=0.7, color='orange', label='Near-Zero Prices')
+        ax1.set_title('Negative Pricing by Hour of Day', fontweight='bold')
+        ax1.set_xlabel('Hour')
+        ax1.set_ylabel('Percentage of Hours (%)')
+        ax1.set_xticks(range(0, 24, 4))
+        ax1.set_xticklabels([f"{h}:00" for h in range(0, 24, 4)])
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+    
+    # 2. Monthly patterns (top-right)
+    if metrics.monthly_breakdown:
+        months = list(range(1, 13))
+        monthly_negative = [metrics.monthly_breakdown.get(m, {}).get('avg_hours_per_day', 0) for m in months]
+        
+        ax2.plot(months, monthly_negative, marker='o', linewidth=2, markersize=6, color='#2E86AB')
+        ax2.set_title('Average Negative Pricing Hours per Day by Month', fontweight='bold')
+        ax2.set_xlabel('Month')
+        ax2.set_ylabel('Hours per Day')
+        ax2.set_xticks(range(1, 13))
+        ax2.set_xticklabels(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+        ax2.grid(True, alpha=0.3)
+    
+    # 3. Solar potential vs current (bottom-left)
+    if 'yearly_summary' in seasonal_data:
+        current_avg = seasonal_data['yearly_summary']['avg_current_hours_per_day']
+        potential_avg = seasonal_data['yearly_summary']['avg_theoretical_max_hours_per_day']
+        
+        categories = ['Current\nActual', 'Theoretical\nMaximum']
+        values = [current_avg, potential_avg]
+        colors = ['#FF6B35', '#2A9D8F']
+        
+        bars = ax3.bar(categories, values, color=colors, alpha=0.7)
+        ax3.set_title('Current vs Theoretical Maximum', fontweight='bold')
+        ax3.set_ylabel('Hours per Day')
+        ax3.grid(True, alpha=0.3, axis='y')
+        
+        # Add value labels on bars
+        for bar, value in zip(bars, values):
+            height = bar.get_height()
+            ax3.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                    f'{value:.1f}h', ha='center', va='bottom', fontweight='bold')
+    
+    # 4. Progress by month (bottom-right)
+    if seasonal_data and len(seasonal_data) > 1:  # Exclude yearly_summary
+        month_nums = []
+        progress_values = []
+        
+        for month, data in seasonal_data.items():
+            if month != 'yearly_summary' and 'progress_metrics' in data:
+                if 'error' not in data['progress_metrics']:
+                    month_nums.append(month)
+                    progress_values.append(data['progress_metrics']['progress_percentage'])
+        
+        if month_nums:
+            ax4.plot(month_nums, progress_values, marker='s', linewidth=2, markersize=6, color='#E63946')
+            ax4.set_title('Progress Toward Maximum by Month', fontweight='bold')
+            ax4.set_xlabel('Month')
+            ax4.set_ylabel('Progress (%)')
+            ax4.set_xticks(range(1, 13))
+            ax4.set_xticklabels(['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'])
+            ax4.set_ylim(0, 100)
+            ax4.grid(True, alpha=0.3)
+    
+    # Overall title
+    country_name = _get_country_name(region)
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    fig.suptitle(f'Negative Pricing Analysis - {country_name} ({start_date} to {end_date})', 
+                fontsize=16, fontweight='bold')
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Negative pricing analysis chart saved to: {output_path}")
 
 
 def _calculate_simple_trend(values: list) -> str:

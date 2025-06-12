@@ -3,6 +3,25 @@
 import os
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
+
+
+def _find_project_root() -> str:
+    """
+    Find the project root directory by looking for setup.py or pyproject.toml.
+    
+    Returns:
+        Path to project root directory
+    """
+    current = Path.cwd()
+    
+    # Look for project markers up the directory tree
+    for parent in [current] + list(current.parents):
+        if any((parent / marker).exists() for marker in ['setup.py', 'pyproject.toml', 'CLAUDE.md']):
+            return str(parent)
+    
+    # If no project root found, use current directory
+    return str(current)
 
 
 def generate_chart_filename(
@@ -24,13 +43,17 @@ def generate_chart_filename(
         end_date: End date (YYYY-MM-DD)
         window_days: Rolling window size in days (for rolling analyses)
         suffix: Additional suffix for the filename
-        base_dir: Base directory for saving files
+        base_dir: Base directory for saving files (relative to project root)
         
     Returns:
         Full path to the output file
     """
+    # Find project root and create absolute path to images directory
+    project_root = _find_project_root()
+    full_base_dir = os.path.join(project_root, base_dir)
+    
     # Ensure base directory exists
-    os.makedirs(base_dir, exist_ok=True)
+    os.makedirs(full_base_dir, exist_ok=True)
     
     # Clean dates for filename
     start_clean = start_date.replace("-", "")
@@ -50,7 +73,7 @@ def generate_chart_filename(
     # Join with underscores and add extension
     filename = "_".join(parts) + ".png"
     
-    return os.path.join(base_dir, filename)
+    return os.path.join(full_base_dir, filename)
 
 
 def generate_duck_factor_filename(
@@ -170,14 +193,18 @@ def generate_timestamped_filename(
     Args:
         chart_type: Type of chart
         region: Region code
-        base_dir: Base directory
+        base_dir: Base directory (relative to project root)
         
     Returns:
         Timestamped filename
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    os.makedirs(base_dir, exist_ok=True)
+    # Find project root and create absolute path
+    project_root = _find_project_root()
+    full_base_dir = os.path.join(project_root, base_dir)
+    
+    os.makedirs(full_base_dir, exist_ok=True)
     filename = f"{chart_type}_{region.lower()}_{timestamp}.png"
     
-    return os.path.join(base_dir, filename)
+    return os.path.join(full_base_dir, filename)
