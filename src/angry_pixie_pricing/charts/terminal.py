@@ -6,6 +6,28 @@ from typing import Optional
 from ..analysis.hourly import HourlyPriceAnalyzer
 
 
+def _get_price_grid_interval(price_range: float) -> float:
+    """
+    Determine appropriate grid interval for price axis based on data range.
+    
+    Args:
+        price_range: The range (max - min) of prices in the dataset
+        
+    Returns:
+        Appropriate grid interval for the price axis
+    """
+    if price_range <= 20:
+        return 5
+    elif price_range <= 50:
+        return 10
+    elif price_range <= 100:
+        return 25
+    elif price_range <= 200:
+        return 50
+    else:
+        return 100
+
+
 def create_terminal_price_chart(
     df: pd.DataFrame,
     region: str,
@@ -33,7 +55,7 @@ def create_terminal_price_chart(
     indices = list(range(len(prices)))
 
     # Create the plot - connect discrete points with straight lines, no curve interpolation
-    plt.plot(indices, prices, marker="braille", color="cyan")
+    plt.plot(indices, prices, marker="hd", color="cyan")
 
     # Set title
     if title is None:
@@ -63,8 +85,20 @@ def create_terminal_price_chart(
     else:
         plt.xticks(indices, timestamps)
 
-    # Add grid for better readability
+    # Add grid with appropriate price intervals for better readability
+    price_range = df['price'].max() - df['price'].min()
+    grid_interval = _get_price_grid_interval(price_range)
     plt.grid(True, True)
+    
+    # Set y-axis ticks at sensible intervals
+    min_price = df['price'].min()
+    max_price = df['price'].max()
+    # Round to nearest grid interval for clean axis
+    y_min = int(min_price // grid_interval) * grid_interval
+    y_max = int((max_price // grid_interval) + 1) * grid_interval
+    y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
+    if y_ticks:
+        plt.yticks(y_ticks)
 
     # Show the plot
     plt.show()
@@ -206,10 +240,12 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         workday_prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
         nonworkday_prices = [nonworkday_stats[nonworkday_stats['hour'] == h]['mean'].iloc[0] if not nonworkday_stats[nonworkday_stats['hour'] == h].empty else 0 for h in hours]
         
-        plt.plot(hours, workday_prices, label="Workdays", color="red", marker="braille")
-        plt.plot(hours, nonworkday_prices, label="Weekends/Holidays", color="blue", marker="braille") 
+        plt.plot(hours, workday_prices, label="Workdays", color="red", marker="hd")
+        plt.plot(hours, nonworkday_prices, label="Weekends/Holidays", color="blue", marker="hd") 
         
-        plt.title(f"Duck Curve Analysis - {region} (Workdays vs Weekends/Holidays)")
+        start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+        end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+        plt.title(f"Duck Curve Analysis - {region} ({start_date} to {end_date})")
         plt.xlabel("Hour of Day")
         plt.ylabel(f"Average Price ({unit})")
         
@@ -217,7 +253,21 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         x_labels = [f"{h}:00" for h in range(0, 24, 4)]
         plt.xticks(range(0, 24, 4), x_labels)
         
+        # Add appropriate grid lines based on price range
+        all_prices = workday_prices + nonworkday_prices
+        price_range = max(all_prices) - min(all_prices)
+        grid_interval = _get_price_grid_interval(price_range)
         plt.grid(True, True)
+        
+        # Set y-axis ticks at sensible intervals
+        min_price = min(all_prices)
+        max_price = max(all_prices)
+        y_min = int(min_price // grid_interval) * grid_interval
+        y_max = int((max_price // grid_interval) + 1) * grid_interval
+        y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
+        if y_ticks:
+            plt.yticks(y_ticks)
+        
         plt.show()
     
     # Analysis summary
@@ -287,8 +337,10 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     hours = list(range(24))
     prices = [workday_stats[workday_stats['hour'] == h]['mean'].iloc[0] if not workday_stats[workday_stats['hour'] == h].empty else 0 for h in hours]
     
-    plt.plot(hours, prices, marker="braille", color="cyan")
-    plt.title(f"Workday Duck Curve - {region}")
+    plt.plot(hours, prices, marker="hd", color="cyan")
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    plt.title(f"Workday Duck Curve - {region} ({start_date} to {end_date})")
     plt.xlabel("Hour of Day")
     plt.ylabel(f"Average Price ({unit})")
     
@@ -296,7 +348,20 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     x_labels = [f"{h}:00" for h in range(0, 24, 2)]
     plt.xticks(range(0, 24, 2), x_labels)
     
+    # Add appropriate grid lines based on price range
+    price_range = max(prices) - min(prices)
+    grid_interval = _get_price_grid_interval(price_range)
     plt.grid(True, True)
+    
+    # Set y-axis ticks at sensible intervals
+    min_price = min(prices)
+    max_price = max(prices)
+    y_min = int(min_price // grid_interval) * grid_interval
+    y_max = int((max_price // grid_interval) + 1) * grid_interval
+    y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
+    if y_ticks:
+        plt.yticks(y_ticks)
+    
     plt.show()
     
     # Show duck curve features

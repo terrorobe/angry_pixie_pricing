@@ -75,11 +75,23 @@ mypy src/
 - No curve smoothing, spline interpolation, or bezier curves between hourly data points
 - Each data point represents actual hourly electricity prices
 - Lines connect adjacent time periods with simple straight segments
-- Use plotext markers (braille, dot, etc.) to show individual data points clearly
+- Use `marker="hd"` (default plotext marker) for clear data point visibility
+
+### Chart Content Requirements
+- **Data Context**: All charts must include region, time range, and any applied filters in titles/labels
+- **Price Axis**: Clearly labeled price axis with appropriate units (EUR/MWh, etc.)
+- **Grid Lines**: Sensible price intervals (10, 25, 50 EUR/MWh increments based on data range)
+- **Filter Information**: Show when data is filtered (e.g., "Workdays Only", "Holidays Excluded")
+- **Time Range**: Always display the exact date range being analyzed
+
+### Examples
+- Title: "Electricity Spot Prices - DE (2023-07-01 to 2023-07-31)"
+- Filter example: "Duck Curve Analysis - DE Workdays Only (2023-07-01 to 2023-07-31)"
+- Axis: "Price (EUR/MWh)" with grid lines at 25 EUR/MWh intervals
 
 ### Rationale
 - Electricity prices are discrete hourly values, not continuous functions
 - Straight line connections preserve data integrity while showing trends
 - Curve interpolation can misrepresent actual market data and create misleading patterns
-- Users need to see exact price points connected by simple linear segments
-- Duck curve analysis requires precise hourly values with clear connections between periods
+- Users need complete context about what data they're viewing
+- Grid lines help users quickly estimate price levels and ranges
