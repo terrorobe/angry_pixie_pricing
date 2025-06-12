@@ -80,7 +80,7 @@ mypy src/
 ### Chart Content Requirements
 - **Data Context**: All charts must include region, time range, and any applied filters in titles/labels
 - **Price Axis**: Clearly labeled price axis with appropriate units (EUR/MWh, etc.)
-- **Grid Lines**: Sensible price intervals (10, 25, 50 EUR/MWh increments based on data range)
+- **Grid Lines**: Enable both horizontal and vertical grid lines for easy reading
 - **Filter Information**: Show when data is filtered (e.g., "Workdays Only", "Holidays Excluded")
 - **Time Range**: Always display the exact date range being analyzed
 
@@ -88,7 +88,7 @@ mypy src/
 - Title: "Electricity Spot Prices - Germany (2023-07-01 to 2023-07-31)"
 - Filter example: "Duck Curve Analysis - Germany (2023-07-01 to 2023-07-31)"
 - Workday filter: "Workday Duck Curve - Germany (2023-07-01 to 2023-07-31)"
-- Axis: "Price (EUR/MWh)" with grid lines at 25 EUR/MWh intervals
+- Axis: "Price (EUR/MWh)" with automatic grid lines
 
 ### Rationale
 - Electricity prices are discrete hourly values, not continuous functions

@@ -35,28 +35,6 @@ def _get_country_name(region_code: str) -> str:
     return country_names.get(region_code.upper(), region_code)
 
 
-def _get_price_grid_interval(price_range: float) -> float:
-    """
-    Determine appropriate grid interval for price axis based on data range.
-    
-    Args:
-        price_range: The range (max - min) of prices in the dataset
-        
-    Returns:
-        Appropriate grid interval for the price axis
-    """
-    if price_range <= 20:
-        return 5
-    elif price_range <= 50:
-        return 10
-    elif price_range <= 100:
-        return 25
-    elif price_range <= 200:
-        return 50
-    else:
-        return 100
-
-
 def create_terminal_price_chart(
     df: pd.DataFrame,
     region: str,
@@ -115,20 +93,8 @@ def create_terminal_price_chart(
     else:
         plt.xticks(indices, timestamps)
 
-    # Add grid with appropriate price intervals for better readability
-    price_range = df['price'].max() - df['price'].min()
-    grid_interval = _get_price_grid_interval(price_range)
+    # Add grid for better readability
     plt.grid(True, True)
-    
-    # Set y-axis ticks at sensible intervals
-    min_price = df['price'].min()
-    max_price = df['price'].max()
-    # Round to nearest grid interval for clean axis
-    y_min = int(min_price // grid_interval) * grid_interval
-    y_max = int((max_price // grid_interval) + 1) * grid_interval
-    y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
-    if y_ticks:
-        plt.yticks(y_ticks)
 
     # Show the plot
     plt.show()
@@ -280,24 +246,10 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         plt.xlabel("Hour of Day")
         plt.ylabel(f"Average Price ({unit})")
         
-        # Set x-axis to show all hours with labels every 4 hours
+        # Set x-axis to show every 4 hours
         plt.xticks(list(range(0, 24, 4)), [f"{h}:00" for h in range(0, 24, 4)])
         
-        # Add appropriate grid lines based on price range
-        all_prices = workday_prices + nonworkday_prices
-        price_range = max(all_prices) - min(all_prices)
-        grid_interval = _get_price_grid_interval(price_range)
-        
-        # Set y-axis ticks at sensible intervals
-        min_price = min(all_prices)
-        max_price = max(all_prices)
-        y_min = int(min_price // grid_interval) * grid_interval
-        y_max = int((max_price // grid_interval) + 1) * grid_interval
-        y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
-        if y_ticks:
-            plt.yticks(y_ticks)
-        
-        # Enable grid after setting ticks
+        # Add grid lines
         plt.grid(True, True)
         
         plt.show()
@@ -380,20 +332,7 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     # Set x-axis to show every 2 hours for better detail
     plt.xticks(list(range(0, 24, 2)), [f"{h}:00" for h in range(0, 24, 2)])
     
-    # Add appropriate grid lines based on price range
-    price_range = max(prices) - min(prices)
-    grid_interval = _get_price_grid_interval(price_range)
-    
-    # Set y-axis ticks at sensible intervals
-    min_price = min(prices)
-    max_price = max(prices)
-    y_min = int(min_price // grid_interval) * grid_interval
-    y_max = int((max_price // grid_interval) + 1) * grid_interval
-    y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
-    if y_ticks:
-        plt.yticks(y_ticks)
-    
-    # Enable grid after setting ticks
+    # Add grid lines
     plt.grid(True, True)
     
     plt.show()
