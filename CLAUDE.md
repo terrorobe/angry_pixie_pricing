@@ -85,8 +85,9 @@ mypy src/
 - **Time Range**: Always display the exact date range being analyzed
 
 ### Examples
-- Title: "Electricity Spot Prices - DE (2023-07-01 to 2023-07-31)"
-- Filter example: "Duck Curve Analysis - DE Workdays Only (2023-07-01 to 2023-07-31)"
+- Title: "Electricity Spot Prices - Germany (2023-07-01 to 2023-07-31)"
+- Filter example: "Duck Curve Analysis - Germany (2023-07-01 to 2023-07-31)"
+- Workday filter: "Workday Duck Curve - Germany (2023-07-01 to 2023-07-31)"
 - Axis: "Price (EUR/MWh)" with grid lines at 25 EUR/MWh intervals
 
 ### Rationale

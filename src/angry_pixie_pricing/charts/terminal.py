@@ -6,6 +6,35 @@ from typing import Optional
 from ..analysis.hourly import HourlyPriceAnalyzer
 
 
+def _get_country_name(region_code: str) -> str:
+    """
+    Convert region code to full country name.
+    
+    Args:
+        region_code: Two-letter region/country code
+        
+    Returns:
+        Full country name or original code if not found
+    """
+    country_names = {
+        'AT': 'Austria',
+        'BE': 'Belgium', 
+        'CH': 'Switzerland',
+        'CZ': 'Czech Republic',
+        'DE': 'Germany',
+        'DK': 'Denmark',
+        'ES': 'Spain',
+        'FR': 'France',
+        'IT': 'Italy',
+        'NL': 'Netherlands',
+        'NO': 'Norway',
+        'PL': 'Poland',
+        'SE': 'Sweden',
+        'UK': 'United Kingdom'
+    }
+    return country_names.get(region_code.upper(), region_code)
+
+
 def _get_price_grid_interval(price_range: float) -> float:
     """
     Determine appropriate grid interval for price axis based on data range.
@@ -62,7 +91,8 @@ def create_terminal_price_chart(
         start_date = df["timestamp"].min().strftime("%Y-%m-%d")
         end_date = df["timestamp"].max().strftime("%Y-%m-%d")
         unit = df["unit"].iloc[0] if not df.empty else "EUR/MWh"
-        title = f"Electricity Spot Prices - {region} ({start_date} to {end_date})"
+        country_name = _get_country_name(region)
+        title = f"Electricity Spot Prices - {country_name} ({start_date} to {end_date})"
 
     plt.title(title)
     plt.xlabel("Time")
@@ -245,13 +275,15 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         
         start_date = df["timestamp"].min().strftime("%Y-%m-%d")
         end_date = df["timestamp"].max().strftime("%Y-%m-%d")
-        plt.title(f"Duck Curve Analysis - {region} ({start_date} to {end_date})")
+        country_name = _get_country_name(region)
+        plt.title(f"Duck Curve Analysis - {country_name} ({start_date} to {end_date})")
         plt.xlabel("Hour of Day")
         plt.ylabel(f"Average Price ({unit})")
         
-        # Set x-axis to show every 4 hours
-        x_labels = [f"{h}:00" for h in range(0, 24, 4)]
-        plt.xticks(range(0, 24, 4), x_labels)
+        # Set x-axis to show every 4 hours with grid lines
+        x_ticks = list(range(0, 24, 4))
+        x_labels = [f"{h}:00" for h in x_ticks]
+        plt.xticks(x_ticks, x_labels)
         
         # Add appropriate grid lines based on price range
         all_prices = workday_prices + nonworkday_prices
@@ -340,13 +372,15 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     plt.plot(hours, prices, marker="hd", color="cyan")
     start_date = df["timestamp"].min().strftime("%Y-%m-%d")
     end_date = df["timestamp"].max().strftime("%Y-%m-%d")
-    plt.title(f"Workday Duck Curve - {region} ({start_date} to {end_date})")
+    country_name = _get_country_name(region)
+    plt.title(f"Workday Duck Curve - {country_name} ({start_date} to {end_date})")
     plt.xlabel("Hour of Day")
     plt.ylabel(f"Average Price ({unit})")
     
-    # Set x-axis to show every 2 hours for better detail
-    x_labels = [f"{h}:00" for h in range(0, 24, 2)]
-    plt.xticks(range(0, 24, 2), x_labels)
+    # Set x-axis to show every 2 hours for better detail with grid lines
+    x_ticks = list(range(0, 24, 2))
+    x_labels = [f"{h}:00" for h in x_ticks]
+    plt.xticks(x_ticks, x_labels)
     
     # Add appropriate grid lines based on price range
     price_range = max(prices) - min(prices)
