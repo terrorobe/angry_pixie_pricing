@@ -305,13 +305,15 @@ class NegativePricingAnalyzer:
         
         # Calculate yearly summary
         if seasonal_analysis:
-            yearly_avg_current = np.mean([data['progress_metrics']['current_hours_per_day'] 
-                                        for data in seasonal_analysis.values() 
-                                        if 'error' not in data['progress_metrics']])
+            current_values = [data['progress_metrics']['current_hours_per_day'] 
+                            for data in seasonal_analysis.values() 
+                            if 'error' not in data['progress_metrics']]
+            potential_values = [data['progress_metrics']['theoretical_max_hours_per_day'] 
+                              for data in seasonal_analysis.values() 
+                              if 'error' not in data['progress_metrics']]
             
-            yearly_avg_potential = np.mean([data['progress_metrics']['theoretical_max_hours_per_day'] 
-                                          for data in seasonal_analysis.values() 
-                                          if 'error' not in data['progress_metrics']])
+            yearly_avg_current = np.mean(current_values) if current_values else 0
+            yearly_avg_potential = np.mean(potential_values) if potential_values else 0
             
             seasonal_analysis['yearly_summary'] = {
                 'avg_current_hours_per_day': yearly_avg_current,

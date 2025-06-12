@@ -815,6 +815,7 @@ def create_terminal_negative_pricing_chart(
     region: str,
     width: Optional[int] = None,
     height: Optional[int] = None,
+    near_zero_threshold: float = 5.0,
 ) -> None:
     """
     Create a terminal chart showing negative pricing patterns by hour of day.
@@ -824,9 +825,10 @@ def create_terminal_negative_pricing_chart(
         region: Region code
         width: Chart width
         height: Chart height
+        near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
     """
     analyzer = NegativePricingAnalyzer(region)
-    metrics = analyzer.analyze_negative_pricing_patterns(df)
+    metrics = analyzer.analyze_negative_pricing_patterns(df, near_zero_threshold)
     
     if not metrics.hourly_breakdown:
         print("No data available for negative pricing analysis")
@@ -850,6 +852,7 @@ def create_terminal_negative_pricing_chart(
     end_date = df["timestamp"].max().strftime("%Y-%m-%d")
     country_name = _get_country_name(region)
     title = f"Negative Pricing Patterns - {country_name} ({start_date} to {end_date})"
+    subtitle = f"Negative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh"
     
     plt.title(title)
     plt.xlabel("Hour of Day")
@@ -867,7 +870,8 @@ def create_terminal_negative_pricing_chart(
     # Display the chart
     plt.show()
     
-    # Print summary
+    # Print threshold information and summary
+    print(f"Thresholds: {subtitle}")
     print(f"\nNegative Pricing Summary:")
     print(f"Total negative hours: {metrics.negative_hours} ({metrics.negative_percentage:.1f}%)")
     print(f"Average hours/day: {metrics.avg_hours_per_day:.1f}")
@@ -880,7 +884,8 @@ def create_png_negative_pricing_chart(
     region: str,
     output_path: str,
     width: int = 12,
-    height: int = 8
+    height: int = 8,
+    near_zero_threshold: float = 5.0,
 ) -> None:
     """
     Create a comprehensive PNG chart for negative pricing analysis.
@@ -891,12 +896,13 @@ def create_png_negative_pricing_chart(
         output_path: Path to save PNG file
         width: Figure width
         height: Figure height
+        near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
     """
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
     
     analyzer = NegativePricingAnalyzer(region)
-    metrics = analyzer.analyze_negative_pricing_patterns(df)
+    metrics = analyzer.analyze_negative_pricing_patterns(df, near_zero_threshold)
     seasonal_data = analyzer.analyze_seasonal_patterns(df)
     
     # Create subplots
@@ -977,7 +983,7 @@ def create_png_negative_pricing_chart(
     country_name = _get_country_name(region)
     start_date = df["timestamp"].min().strftime("%Y-%m-%d")
     end_date = df["timestamp"].max().strftime("%Y-%m-%d")
-    fig.suptitle(f'Negative Pricing Analysis - {country_name} ({start_date} to {end_date})', 
+    fig.suptitle(f'Negative Pricing Analysis - {country_name} ({start_date} to {end_date})\nNegative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh', 
                 fontsize=16, fontweight='bold')
     
     # Adjust layout and save

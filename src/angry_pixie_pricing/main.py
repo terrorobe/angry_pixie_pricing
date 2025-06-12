@@ -513,14 +513,14 @@ def negative_pricing(
                     output += '.png'
             
             try:
-                create_png_negative_pricing_chart(df, region, output, width=width or 12, height=height or 8)
+                create_png_negative_pricing_chart(df, region, output, width=width or 12, height=height or 8, near_zero_threshold=threshold)
             except ImportError as e:
                 click.echo(f"Error: {e}", err=True)
                 click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
                 ctx.exit(1)
         else:
             # Terminal output mode (default)
-            create_terminal_negative_pricing_chart(df, region, width=width, height=height)
+            create_terminal_negative_pricing_chart(df, region, width=width, height=height, near_zero_threshold=threshold)
         
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
@@ -583,10 +583,13 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         summer_months = [6, 7, 8]  # June, July, August
         winter_months = [12, 1, 2]  # Dec, Jan, Feb
         
-        summer_avg = np.mean([seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
-                             for m in summer_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']])
-        winter_avg = np.mean([seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
-                             for m in winter_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']])
+        summer_values = [seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
+                        for m in summer_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']]
+        winter_values = [seasonal_data[m]['progress_metrics']['current_hours_per_day'] 
+                        for m in winter_months if m in seasonal_data and 'error' not in seasonal_data[m]['progress_metrics']]
+        
+        summer_avg = np.mean(summer_values) if summer_values else np.nan
+        winter_avg = np.mean(winter_values) if winter_values else np.nan
         
         if not np.isnan(summer_avg) and not np.isnan(winter_avg):
             seasonal_ratio = summer_avg / winter_avg if winter_avg > 0 else float('inf')
