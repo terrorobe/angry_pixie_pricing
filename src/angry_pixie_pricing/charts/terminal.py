@@ -280,16 +280,13 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         plt.xlabel("Hour of Day")
         plt.ylabel(f"Average Price ({unit})")
         
-        # Set x-axis to show every 4 hours with grid lines
-        x_ticks = list(range(0, 24, 4))
-        x_labels = [f"{h}:00" for h in x_ticks]
-        plt.xticks(x_ticks, x_labels)
+        # Set x-axis to show all hours with labels every 4 hours
+        plt.xticks(list(range(0, 24, 4)), [f"{h}:00" for h in range(0, 24, 4)])
         
         # Add appropriate grid lines based on price range
         all_prices = workday_prices + nonworkday_prices
         price_range = max(all_prices) - min(all_prices)
         grid_interval = _get_price_grid_interval(price_range)
-        plt.grid(True, True)
         
         # Set y-axis ticks at sensible intervals
         min_price = min(all_prices)
@@ -299,6 +296,9 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
         if y_ticks:
             plt.yticks(y_ticks)
+        
+        # Enable grid after setting ticks
+        plt.grid(True, True)
         
         plt.show()
     
@@ -377,15 +377,12 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     plt.xlabel("Hour of Day")
     plt.ylabel(f"Average Price ({unit})")
     
-    # Set x-axis to show every 2 hours for better detail with grid lines
-    x_ticks = list(range(0, 24, 2))
-    x_labels = [f"{h}:00" for h in x_ticks]
-    plt.xticks(x_ticks, x_labels)
+    # Set x-axis to show every 2 hours for better detail
+    plt.xticks(list(range(0, 24, 2)), [f"{h}:00" for h in range(0, 24, 2)])
     
     # Add appropriate grid lines based on price range
     price_range = max(prices) - min(prices)
     grid_interval = _get_price_grid_interval(price_range)
-    plt.grid(True, True)
     
     # Set y-axis ticks at sensible intervals
     min_price = min(prices)
@@ -395,6 +392,9 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     y_ticks = list(range(int(y_min), int(y_max) + 1, int(grid_interval)))
     if y_ticks:
         plt.yticks(y_ticks)
+    
+    # Enable grid after setting ticks
+    plt.grid(True, True)
     
     plt.show()
     
