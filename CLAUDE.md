@@ -8,9 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Angry Pixie Pricing is a Python tool for analyzing electricity prices in European markets. It supports two main modes:
+Angry Pixie Pricing is a comprehensive Python tool for analyzing electricity prices in European markets. It supports multiple analysis modes:
+
 1. **Chart Generation**: Create hourly electricity price charts for specific regions and time spans
-2. **Usage Analysis**: Calculate average electricity costs based on smart meter data (15-minute increments)
+2. **Duck Curve Analysis**: Rolling window analysis of renewable energy impact on pricing patterns
+3. **Negative Pricing Analysis**: Track hours of negative/near-zero pricing with solar potential modeling
+4. **Usage Analysis**: Calculate average electricity costs based on smart meter data (15-minute increments)
 
 ## Development Setup
 
@@ -25,18 +28,60 @@ pip install -e .
 ## Commands
 
 ### Running the Application
+
+#### Flexible Date Input
+The tool supports flexible date formats for convenience:
+- **YYYY**: Whole year (e.g., `2024` = Jan 1 - Dec 31, 2024)
+- **YYYY-MM**: Whole month (e.g., `2024-07` = July 1-31, 2024)  
+- **YYYY-MM-DD**: Specific date (e.g., `2024-07-15`)
+- **No end-date**: Defaults to today
+
+#### Basic Price Charts
 ```bash
-# Generate terminal charts (default)
-angry-pixie chart --region DE --start-date 2024-01-01 --end-date 2024-01-31
+# Generate terminal charts (flexible date formats)
+angry-pixie chart --region DE --start-date 2024-07                    # July 2024
+angry-pixie chart --region DE --start-date 2024                       # Whole year 2024
+angry-pixie chart --region DE --start-date 2024-07-15                 # July 15 to today
 
-# Generate PNG charts
-angry-pixie chart --region DE --start-date 2024-01-01 --end-date 2024-01-31 --output chart.png
+# Generate PNG charts with auto-naming
+angry-pixie chart --region DE --start-date 2024-07 --output auto
+# Creates: images/prices_de_20240701_20240731.png
 
-# Duck curve analysis
-angry-pixie chart --region DE --start-date 2024-07-01 --end-date 2024-07-31 --chart-type hourly --output duck_curve.png
+# Duck curve analysis  
+angry-pixie chart --region DE --start-date 2024-07 --chart-type hourly --output duck_curve
+```
 
+#### Duck Factor Analysis (Rolling Window)
+```bash
+# Basic duck factor evolution over 6 years
+angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024
+
+# Seasonal duck factor analysis
+angry-pixie duck-factor --region DE --start-date 2024 --chart-type seasonal --output analysis
+
+# Multi-window comparison (7d, 30d, 90d windows)
+angry-pixie duck-factor --region DE --start-date 2020 --chart-type multi-window --output multi
+
+# Custom window and step size
+angry-pixie duck-factor --region DE --start-date 2024 --window 14d --step 3d
+```
+
+#### Negative Pricing Analysis
+```bash
+# Analyze negative pricing patterns with solar potential
+angry-pixie negative-pricing --region DE --start-date 2024
+
+# Custom threshold and PNG output
+angry-pixie negative-pricing --region DE --start-date 2024-06 --threshold 10.0 --output negative_analysis
+
+# Multi-year negative pricing trends
+angry-pixie negative-pricing --region DE --start-date 2020 --end-date 2024
+```
+
+#### Smart Meter Cost Calculation
+```bash
 # Calculate costs from smart meter data
-angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-01-01 --end-date 2024-01-31
+angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-07
 ```
 
 ### Development Commands
@@ -59,18 +104,31 @@ mypy src/
 ### Project Structure
 - `src/angry_pixie_pricing/` - Main package
   - `data/` - Data acquisition and processing modules
-  - `charts/` - Chart generation for price visualization
-  - `analysis/` - Smart meter data analysis and cost calculations
+  - `charts/` - Chart generation for price visualization (terminal and PNG)
+  - `analysis/` - Advanced electricity market analysis modules
+    - `hourly.py` - Duck curve and hourly pattern analysis
+    - `rolling_duck.py` - Multi-window duck factor evolution analysis
+    - `negative_pricing.py` - Negative pricing patterns with solar potential modeling
+    - `day_types.py` - Workday/holiday classification utilities
   - `utils/` - Utility functions and helpers
-  - `main.py` - CLI entry point
+    - `date_parser.py` - Flexible date format parsing
+    - `filename_generator.py` - Smart output file naming with project root anchoring
+    - `cli_options.py` - Reusable CLI option decorators
+  - `main.py` - CLI entry point with multiple analysis commands
 - `tests/` - Test files
+- `images/` - Generated chart outputs (gitignored)
 - `data/` - Data storage (raw and processed)
 
 ### Key Components
-- **CLI Interface**: Click-based command-line tool with chart and calculate commands
+- **CLI Interface**: Click-based command-line tool with multiple analysis commands (`chart`, `duck-factor`, `negative-pricing`, `calculate`)
+- **Flexible Date Parsing**: Supports YYYY, YYYY-MM, YYYY-MM-DD formats with smart defaults
 - **Data Processing**: Handles European electricity market data and smart meter readings
-- **Visualization**: Creates both terminal and PNG charts for hourly price analysis
-- **Cost Analysis**: Processes 15-minute smart meter data for cost calculations
+- **Advanced Analytics**: 
+  - Rolling duck factor analysis with trend detection
+  - Negative pricing analysis with solar potential modeling
+  - Seasonal pattern detection and year-over-year comparisons
+- **Visualization**: Creates both terminal and high-resolution PNG charts
+- **Smart Output Management**: Auto-generated filenames with project-root anchoring
 
 ## 📊 Data Visualization Guidelines
 
@@ -111,3 +169,27 @@ mypy src/
 - Curve interpolation can misrepresent actual market data and create misleading patterns
 - Users need complete context about what data they're viewing
 - Grid lines help users quickly estimate price levels and ranges
+
+## 📈 Analysis Capabilities
+
+### Duck Factor Analysis
+- **Rolling Windows**: Configurable window sizes (7d, 30d, 90d) with customizable step sizes
+- **Trend Detection**: Statistical trend analysis with R-squared confidence metrics
+- **Seasonal Patterns**: Automatic detection of seasonal variations in duck curve strength
+- **Year-over-Year Tracking**: Progress metrics showing renewable energy adoption
+- **Multi-Window Comparison**: Compare different time scales simultaneously
+
+### Negative Pricing Analysis
+- **Solar Potential Modeling**: Estimates theoretical maximum negative pricing hours based on:
+  - EU PVGIS solar irradiation data
+  - Global Solar Atlas regional data
+  - Current solar capacity and grid flexibility factors
+- **Progress Metrics**: Track how close each region is to solar saturation
+- **Hourly Patterns**: Identify peak negative pricing hours and seasonal variations
+- **Capacity Scenarios**: Model impacts of 2x, 5x, 10x current solar capacity
+
+### Data Sources & Attribution
+- **Solar Irradiation**: EU PVGIS, Global Solar Atlas, Copernicus Climate Data Store
+- **Solar Capacity**: SolarPower Europe, IRENA Global Energy Transformation statistics
+- **Grid Flexibility**: Estimated based on hydro storage, interconnection, demand response capabilities
+- **Note**: All data sources are approximate and compiled for modeling purposes
