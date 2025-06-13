@@ -399,7 +399,7 @@ def calculate_weekly_hours_timeseries(
     near_zero_threshold: float = 5.0
 ) -> pd.DataFrame:
     """
-    Calculate weekly hours with negative/near-zero prices for timechart visualization.
+    Calculate weekly average daily hours with negative/near-zero prices for timechart visualization.
     
     Args:
         df: DataFrame with columns ['timestamp', 'price', 'unit']
@@ -407,6 +407,7 @@ def calculate_weekly_hours_timeseries(
         
     Returns:
         DataFrame with columns ['week_start', 'negative_hours', 'near_zero_hours']
+        where hours represent average daily hours within each week
     """
     if df.empty:
         return pd.DataFrame(columns=['week_start', 'negative_hours', 'near_zero_hours'])
@@ -417,15 +418,22 @@ def calculate_weekly_hours_timeseries(
     df_weekly['is_negative'] = df_weekly['price'] < 0
     df_weekly['is_near_zero'] = df_weekly['price'] <= near_zero_threshold
     
-    # Group by week and count hours
-    weekly_counts = df_weekly.groupby('week_start').agg({
+    # Group by week and calculate total hours and days
+    weekly_agg = df_weekly.groupby('week_start').agg({
         'is_negative': 'sum',
-        'is_near_zero': 'sum'
+        'is_near_zero': 'sum',
+        'timestamp': 'count'  # Total hours in the week
     }).reset_index()
     
-    weekly_counts.columns = ['week_start', 'negative_hours', 'near_zero_hours']
+    # Calculate average daily hours within each week
+    weekly_agg['days_in_week'] = weekly_agg['timestamp'] / 24  # Convert hours to days
+    weekly_agg['negative_hours'] = weekly_agg['is_negative'] / weekly_agg['days_in_week']
+    weekly_agg['near_zero_hours'] = weekly_agg['is_near_zero'] / weekly_agg['days_in_week']
     
-    return weekly_counts.sort_values('week_start')
+    # Return only the columns we need
+    result = weekly_agg[['week_start', 'negative_hours', 'near_zero_hours']].copy()
+    
+    return result.sort_values('week_start')
 
 
 def calculate_monthly_hours_timeseries(
@@ -433,7 +441,7 @@ def calculate_monthly_hours_timeseries(
     near_zero_threshold: float = 5.0
 ) -> pd.DataFrame:
     """
-    Calculate monthly hours with negative/near-zero prices for timechart visualization.
+    Calculate monthly average daily hours with negative/near-zero prices for timechart visualization.
     
     Args:
         df: DataFrame with columns ['timestamp', 'price', 'unit']
@@ -441,6 +449,7 @@ def calculate_monthly_hours_timeseries(
         
     Returns:
         DataFrame with columns ['month_start', 'negative_hours', 'near_zero_hours']
+        where hours represent average daily hours within each month
     """
     if df.empty:
         return pd.DataFrame(columns=['month_start', 'negative_hours', 'near_zero_hours'])
@@ -451,15 +460,22 @@ def calculate_monthly_hours_timeseries(
     df_monthly['is_negative'] = df_monthly['price'] < 0
     df_monthly['is_near_zero'] = df_monthly['price'] <= near_zero_threshold
     
-    # Group by month and count hours
-    monthly_counts = df_monthly.groupby('month_start').agg({
+    # Group by month and calculate total hours and days
+    monthly_agg = df_monthly.groupby('month_start').agg({
         'is_negative': 'sum',
-        'is_near_zero': 'sum'
+        'is_near_zero': 'sum',
+        'timestamp': 'count'  # Total hours in the month
     }).reset_index()
     
-    monthly_counts.columns = ['month_start', 'negative_hours', 'near_zero_hours']
+    # Calculate average daily hours within each month
+    monthly_agg['days_in_month'] = monthly_agg['timestamp'] / 24  # Convert hours to days
+    monthly_agg['negative_hours'] = monthly_agg['is_negative'] / monthly_agg['days_in_month']
+    monthly_agg['near_zero_hours'] = monthly_agg['is_near_zero'] / monthly_agg['days_in_month']
     
-    return monthly_counts.sort_values('month_start')
+    # Return only the columns we need
+    result = monthly_agg[['month_start', 'negative_hours', 'near_zero_hours']].copy()
+    
+    return result.sort_values('month_start')
 
 
 def calculate_aggregated_hours_timeseries(

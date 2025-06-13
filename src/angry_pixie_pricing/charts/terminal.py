@@ -928,8 +928,8 @@ def create_terminal_negative_pricing_timechart(
     
     aggregation_labels = {
         "daily": ("Daily Hours", "Hours per Day"),
-        "weekly": ("Weekly Hours", "Hours per Week"),
-        "monthly": ("Monthly Hours", "Hours per Month")
+        "weekly": ("Weekly Average Daily Hours", "Average Hours per Day"),
+        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day")
     }
     
     title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
@@ -973,11 +973,18 @@ def create_terminal_negative_pricing_timechart(
     print(f"Thresholds: {subtitle}")
     print(f"\n{title_text.split()[0]} Summary:")
     
-    period_unit = aggregation_level.replace("ly", "").replace("y", "")  # daily->day, weekly->week, monthly->month
-    print(f"Average negative hours/{period_unit}: {aggregated_data['negative_hours'].mean():.1f}")
-    print(f"Average near-zero hours/{period_unit}: {aggregated_data['near_zero_hours'].mean():.1f}")
-    print(f"Max negative hours in a {period_unit}: {aggregated_data['negative_hours'].max()}")
-    print(f"Max near-zero hours in a {period_unit}: {aggregated_data['near_zero_hours'].max()}")
+    # For weekly and monthly, we show average daily hours, so units are different
+    if aggregation_level == "daily":
+        period_unit = "day"
+        unit_label = "hours/day"
+    else:
+        period_unit = "period" 
+        unit_label = "avg hours/day"
+    
+    print(f"Average negative {unit_label}: {aggregated_data['negative_hours'].mean():.1f}")
+    print(f"Average near-zero {unit_label}: {aggregated_data['near_zero_hours'].mean():.1f}")
+    print(f"Max negative {unit_label} in a {period_unit}: {aggregated_data['negative_hours'].max():.1f}")
+    print(f"Max near-zero {unit_label} in a {period_unit}: {aggregated_data['near_zero_hours'].max():.1f}")
     print(f"{aggregation_labels[aggregation_level][0].split()[0]} periods with any negative prices: {(aggregated_data['negative_hours'] > 0).sum()}")
     print()
 
@@ -1148,8 +1155,8 @@ def create_png_negative_pricing_timechart(
     
     aggregation_labels = {
         "daily": ("Daily Hours", "Hours per Day"),
-        "weekly": ("Weekly Hours", "Hours per Week"),
-        "monthly": ("Monthly Hours", "Hours per Month")
+        "weekly": ("Weekly Average Daily Hours", "Average Hours per Day"),
+        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day")
     }
     
     title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
@@ -1202,8 +1209,15 @@ def create_png_negative_pricing_timechart(
     max_near_zero = aggregated_data['near_zero_hours'].max()
     periods_with_negative = (aggregated_data['negative_hours'] > 0).sum()
     
-    period_unit = aggregation_level.replace("ly", "").replace("y", "")  # daily->day, weekly->week, monthly->month
-    summary_text = f'Avg negative: {avg_negative:.1f} hrs/{period_unit}\nAvg near-zero: {avg_near_zero:.1f} hrs/{period_unit}\nMax negative: {max_negative} hrs\n{title_text.split()[0]} periods with negative: {periods_with_negative}'
+    # For weekly and monthly, we show average daily hours, so units are different
+    if aggregation_level == "daily":
+        unit_label = "hrs/day"
+        max_unit_label = "hrs"
+    else:
+        unit_label = "avg hrs/day"
+        max_unit_label = "avg hrs/day"
+    
+    summary_text = f'Avg negative: {avg_negative:.1f} {unit_label}\nAvg near-zero: {avg_near_zero:.1f} {unit_label}\nMax negative: {max_negative:.1f} {max_unit_label}\n{title_text.split()[0]} periods with negative: {periods_with_negative}'
     ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
             fontsize=10)
