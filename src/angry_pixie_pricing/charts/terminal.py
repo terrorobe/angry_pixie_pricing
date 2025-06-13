@@ -885,9 +885,10 @@ def create_terminal_negative_pricing_timechart(
     width: Optional[int] = None,
     height: Optional[int] = None,
     near_zero_threshold: float = 5.0,
+    aggregation_level: str = "daily",
 ) -> None:
     """
-    Create a terminal timechart showing daily hours with negative/near-zero prices.
+    Create a terminal timechart showing aggregated hours with negative/near-zero prices.
     
     Args:
         df: DataFrame with price data
@@ -895,13 +896,14 @@ def create_terminal_negative_pricing_timechart(
         width: Chart width
         height: Chart height
         near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
+        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
     """
-    from ..analysis.negative_pricing import calculate_daily_hours_timeseries
+    from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries
     
-    # Calculate daily hours
-    daily_data = calculate_daily_hours_timeseries(df, near_zero_threshold)
+    # Calculate aggregated hours
+    aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
     
-    if daily_data.empty:
+    if aggregated_data.empty:
         print("No data available for negative pricing timechart")
         return
     
@@ -911,24 +913,32 @@ def create_terminal_negative_pricing_timechart(
     
     # Prepare data for plotting
     # Use numeric indices for x-axis instead of date strings to avoid plotext date parsing issues
-    x_values = list(range(len(daily_data)))
-    negative_hours = daily_data['negative_hours'].tolist()
-    near_zero_hours = daily_data['near_zero_hours'].tolist()
+    x_values = list(range(len(aggregated_data)))
+    negative_hours = aggregated_data['negative_hours'].tolist()
+    near_zero_hours = aggregated_data['near_zero_hours'].tolist()
     
     # Create the plot - use line plot for time series
     plt.plot(x_values, negative_hours, marker="hd", color="red", label="Negative Prices (<0)")
     plt.plot(x_values, near_zero_hours, marker="hd", color="orange", label=f"Near-Zero (≤{near_zero_threshold})")
     
-    # Set title and labels
+    # Set title and labels based on aggregation level
     start_date = df["timestamp"].min().strftime("%Y-%m-%d")
     end_date = df["timestamp"].max().strftime("%Y-%m-%d")
     country_name = _get_country_name(region)
-    title = f"Daily Hours with Negative/Near-Zero Prices - {country_name}"
+    
+    aggregation_labels = {
+        "daily": ("Daily Hours", "Hours per Day"),
+        "weekly": ("Weekly Hours", "Hours per Week"),
+        "monthly": ("Monthly Hours", "Hours per Month")
+    }
+    
+    title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
+    title = f"{title_text} with Negative/Near-Zero Prices - {country_name}"
     subtitle = f"Negative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh"
     
     plt.title(title)
-    plt.xlabel("Date")
-    plt.ylabel("Hours per Day")
+    plt.xlabel("Time Period")
+    plt.ylabel(ylabel_text)
     
     # Set chart size if specified
     if width:
@@ -936,30 +946,39 @@ def create_terminal_negative_pricing_timechart(
     elif height:
         plt.plotsize(None, height)
     
-    # Configure x-axis to show meaningful date labels
-    dates = daily_data['date'].dt.strftime('%Y-%m-%d').tolist()
-    num_dates = len(dates)
-    if num_dates > 20:
-        # Show every nth date to avoid crowding
-        step = max(1, num_dates // 10)
-        label_indices = list(range(0, num_dates, step))
-        label_values = [dates[i] for i in label_indices]
+    # Configure x-axis to show meaningful time period labels
+    time_periods = aggregated_data['time_period']
+    if aggregation_level == "daily":
+        labels = time_periods.dt.strftime('%Y-%m-%d').tolist()
+    elif aggregation_level == "weekly":
+        labels = time_periods.dt.strftime('%Y-W%U').tolist()  # Year-Week format
+    else:  # monthly
+        labels = time_periods.dt.strftime('%Y-%m').tolist()
+    
+    num_periods = len(labels)
+    if num_periods > 20:
+        # Show every nth label to avoid crowding
+        step = max(1, num_periods // 10)
+        label_indices = list(range(0, num_periods, step))
+        label_values = [labels[i] for i in label_indices]
         plt.xticks(label_indices, label_values)
     else:
-        # Show all dates if there aren't too many
-        plt.xticks(x_values, dates)
+        # Show all labels if there aren't too many
+        plt.xticks(x_values, labels)
     
     # Display the chart
     plt.show()
     
     # Print threshold information and summary
     print(f"Thresholds: {subtitle}")
-    print(f"\nDaily Hours Summary:")
-    print(f"Average negative hours/day: {daily_data['negative_hours'].mean():.1f}")
-    print(f"Average near-zero hours/day: {daily_data['near_zero_hours'].mean():.1f}")
-    print(f"Max negative hours in a day: {daily_data['negative_hours'].max()}")
-    print(f"Max near-zero hours in a day: {daily_data['near_zero_hours'].max()}")
-    print(f"Days with any negative prices: {(daily_data['negative_hours'] > 0).sum()}")
+    print(f"\n{title_text.split()[0]} Summary:")
+    
+    period_unit = aggregation_level.replace("ly", "").replace("y", "")  # daily->day, weekly->week, monthly->month
+    print(f"Average negative hours/{period_unit}: {aggregated_data['negative_hours'].mean():.1f}")
+    print(f"Average near-zero hours/{period_unit}: {aggregated_data['near_zero_hours'].mean():.1f}")
+    print(f"Max negative hours in a {period_unit}: {aggregated_data['negative_hours'].max()}")
+    print(f"Max near-zero hours in a {period_unit}: {aggregated_data['near_zero_hours'].max()}")
+    print(f"{aggregation_labels[aggregation_level][0].split()[0]} periods with any negative prices: {(aggregated_data['negative_hours'] > 0).sum()}")
     print()
 
 
@@ -1085,9 +1104,10 @@ def create_png_negative_pricing_timechart(
     width: int = 12,
     height: int = 6,
     near_zero_threshold: float = 5.0,
+    aggregation_level: str = "daily",
 ) -> None:
     """
-    Create a PNG timechart showing daily hours with negative/near-zero prices.
+    Create a PNG timechart showing aggregated hours with negative/near-zero prices.
     
     Args:
         df: DataFrame with price data
@@ -1096,16 +1116,17 @@ def create_png_negative_pricing_timechart(
         width: Figure width
         height: Figure height
         near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
+        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
     """
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
     
-    from ..analysis.negative_pricing import calculate_daily_hours_timeseries
+    from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries
     
-    # Calculate daily hours
-    daily_data = calculate_daily_hours_timeseries(df, near_zero_threshold)
+    # Calculate aggregated hours
+    aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
     
-    if daily_data.empty:
+    if aggregated_data.empty:
         print("No data available for negative pricing timechart")
         return
     
@@ -1113,36 +1134,57 @@ def create_png_negative_pricing_timechart(
     fig, ax = mpl_plt.subplots(1, 1, figsize=(width, height))
     
     # Plot data
-    ax.plot(daily_data['date'], daily_data['negative_hours'], 
+    ax.plot(aggregated_data['time_period'], aggregated_data['negative_hours'], 
             marker='o', linewidth=2, markersize=4, color='#DC143C', 
             label='Negative Prices (<0 EUR/MWh)')
-    ax.plot(daily_data['date'], daily_data['near_zero_hours'], 
+    ax.plot(aggregated_data['time_period'], aggregated_data['near_zero_hours'], 
             marker='s', linewidth=2, markersize=4, color='#FF8C00', 
             label=f'Near-Zero (≤{near_zero_threshold} EUR/MWh)')
     
-    # Set title and labels
+    # Set title and labels based on aggregation level
     country_name = _get_country_name(region)
     start_date = df["timestamp"].min().strftime("%Y-%m-%d")
     end_date = df["timestamp"].max().strftime("%Y-%m-%d")
     
-    ax.set_title(f'Daily Hours with Negative/Near-Zero Prices - {country_name}\n({start_date} to {end_date})', 
+    aggregation_labels = {
+        "daily": ("Daily Hours", "Hours per Day"),
+        "weekly": ("Weekly Hours", "Hours per Week"),
+        "monthly": ("Monthly Hours", "Hours per Month")
+    }
+    
+    title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
+    
+    ax.set_title(f'{title_text} with Negative/Near-Zero Prices - {country_name}\n({start_date} to {end_date})', 
                 fontweight='bold', fontsize=14)
-    ax.set_xlabel('Date', fontweight='bold')
-    ax.set_ylabel('Hours per Day', fontweight='bold')
+    ax.set_xlabel('Time Period', fontweight='bold')
+    ax.set_ylabel(ylabel_text, fontweight='bold')
     
-    # Configure x-axis
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    # Configure x-axis based on aggregation level
+    num_periods = len(aggregated_data)
     
-    # Auto-adjust x-axis labels based on date range
-    num_days = len(daily_data)
-    if num_days > 365:
-        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    elif num_days > 90:
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
-    elif num_days > 30:
-        ax.xaxis.set_major_locator(mdates.WeekdayLocator())
-    else:
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, num_days // 10)))
+    if aggregation_level == "daily":
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        # Auto-adjust x-axis labels based on date range
+        if num_periods > 365:
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        elif num_periods > 90:
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+        elif num_periods > 30:
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+        else:
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, num_periods // 10)))
+    elif aggregation_level == "weekly":
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        if num_periods > 52:
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        else:
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+    else:  # monthly
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        if num_periods > 24:
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
+        else:
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     
     mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
     
@@ -1154,13 +1196,14 @@ def create_png_negative_pricing_timechart(
     ax.set_ylim(bottom=0)
     
     # Add summary text box
-    avg_negative = daily_data['negative_hours'].mean()
-    avg_near_zero = daily_data['near_zero_hours'].mean()
-    max_negative = daily_data['negative_hours'].max()
-    max_near_zero = daily_data['near_zero_hours'].max()
-    days_with_negative = (daily_data['negative_hours'] > 0).sum()
+    avg_negative = aggregated_data['negative_hours'].mean()
+    avg_near_zero = aggregated_data['near_zero_hours'].mean()
+    max_negative = aggregated_data['negative_hours'].max()
+    max_near_zero = aggregated_data['near_zero_hours'].max()
+    periods_with_negative = (aggregated_data['negative_hours'] > 0).sum()
     
-    summary_text = f'Avg negative: {avg_negative:.1f} hrs/day\nAvg near-zero: {avg_near_zero:.1f} hrs/day\nMax negative: {max_negative} hrs\nDays with negative: {days_with_negative}'
+    period_unit = aggregation_level.replace("ly", "").replace("y", "")  # daily->day, weekly->week, monthly->month
+    summary_text = f'Avg negative: {avg_negative:.1f} hrs/{period_unit}\nAvg near-zero: {avg_near_zero:.1f} hrs/{period_unit}\nMax negative: {max_negative} hrs\n{title_text.split()[0]} periods with negative: {periods_with_negative}'
     ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
             fontsize=10)

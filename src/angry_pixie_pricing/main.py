@@ -462,6 +462,7 @@ def negative_pricing(
     end_date: Optional[str],
     threshold: float,
     chart_type: str,
+    aggregation_level: str,
     output: Optional[str],
     png: bool,
     no_cache: bool,
@@ -496,27 +497,27 @@ def negative_pricing(
         # Handle different chart types
         if chart_type == "timechart":
             # Timechart mode - no need for comprehensive analysis
-            click.echo("Generating daily hours timechart...")
+            click.echo(f"Generating {aggregation_level} hours timechart...")
             
             # Handle PNG output - either via --png flag or --output
             if png or output:
                 # PNG output mode
                 if png:
                     # Auto-generate filename when using --png flag
-                    output = f"images/negative-pricing-timechart_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                    output = f"images/negative-pricing-timechart-{aggregation_level}_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
                 elif not output.lower().endswith('.png'):
                     # Add .png extension if not present
                     output += '.png'
                 
                 try:
-                    create_png_negative_pricing_timechart(df, region, output, width=width or 12, height=height or 6, near_zero_threshold=threshold)
+                    create_png_negative_pricing_timechart(df, region, output, width=width or 12, height=height or 6, near_zero_threshold=threshold, aggregation_level=aggregation_level)
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
                     ctx.exit(1)
             else:
                 # Terminal output mode (default)
-                create_terminal_negative_pricing_timechart(df, region, width=width, height=height, near_zero_threshold=threshold)
+                create_terminal_negative_pricing_timechart(df, region, width=width, height=height, near_zero_threshold=threshold, aggregation_level=aggregation_level)
         else:
             # Analysis mode (default)
             click.echo("Analyzing negative pricing patterns...")

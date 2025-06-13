@@ -394,6 +394,106 @@ def calculate_daily_hours_timeseries(
     return daily_counts.sort_values('date')
 
 
+def calculate_weekly_hours_timeseries(
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0
+) -> pd.DataFrame:
+    """
+    Calculate weekly hours with negative/near-zero prices for timechart visualization.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        
+    Returns:
+        DataFrame with columns ['week_start', 'negative_hours', 'near_zero_hours']
+    """
+    if df.empty:
+        return pd.DataFrame(columns=['week_start', 'negative_hours', 'near_zero_hours'])
+    
+    # Add weekly grouping columns
+    df_weekly = df.copy()
+    df_weekly['week_start'] = df_weekly['timestamp'].dt.to_period('W').dt.start_time
+    df_weekly['is_negative'] = df_weekly['price'] < 0
+    df_weekly['is_near_zero'] = df_weekly['price'] <= near_zero_threshold
+    
+    # Group by week and count hours
+    weekly_counts = df_weekly.groupby('week_start').agg({
+        'is_negative': 'sum',
+        'is_near_zero': 'sum'
+    }).reset_index()
+    
+    weekly_counts.columns = ['week_start', 'negative_hours', 'near_zero_hours']
+    
+    return weekly_counts.sort_values('week_start')
+
+
+def calculate_monthly_hours_timeseries(
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0
+) -> pd.DataFrame:
+    """
+    Calculate monthly hours with negative/near-zero prices for timechart visualization.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        
+    Returns:
+        DataFrame with columns ['month_start', 'negative_hours', 'near_zero_hours']
+    """
+    if df.empty:
+        return pd.DataFrame(columns=['month_start', 'negative_hours', 'near_zero_hours'])
+    
+    # Add monthly grouping columns
+    df_monthly = df.copy()
+    df_monthly['month_start'] = df_monthly['timestamp'].dt.to_period('M').dt.start_time
+    df_monthly['is_negative'] = df_monthly['price'] < 0
+    df_monthly['is_near_zero'] = df_monthly['price'] <= near_zero_threshold
+    
+    # Group by month and count hours
+    monthly_counts = df_monthly.groupby('month_start').agg({
+        'is_negative': 'sum',
+        'is_near_zero': 'sum'
+    }).reset_index()
+    
+    monthly_counts.columns = ['month_start', 'negative_hours', 'near_zero_hours']
+    
+    return monthly_counts.sort_values('month_start')
+
+
+def calculate_aggregated_hours_timeseries(
+    df: pd.DataFrame,
+    aggregation_level: str = "daily",
+    near_zero_threshold: float = 5.0
+) -> pd.DataFrame:
+    """
+    Calculate aggregated hours with negative/near-zero prices for timechart visualization.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        
+    Returns:
+        DataFrame with appropriate time column and ['negative_hours', 'near_zero_hours']
+    """
+    if aggregation_level == "daily":
+        result = calculate_daily_hours_timeseries(df, near_zero_threshold)
+        # Rename date column to time_period for consistency
+        result = result.rename(columns={'date': 'time_period'})
+    elif aggregation_level == "weekly":
+        result = calculate_weekly_hours_timeseries(df, near_zero_threshold)
+        result = result.rename(columns={'week_start': 'time_period'})
+    elif aggregation_level == "monthly":
+        result = calculate_monthly_hours_timeseries(df, near_zero_threshold)
+        result = result.rename(columns={'month_start': 'time_period'})
+    else:
+        raise ValueError(f"Invalid aggregation_level: {aggregation_level}. Must be 'daily', 'weekly', or 'monthly'")
+    
+    return result
+
+
 def analyze_negative_pricing_comprehensive(
     df: pd.DataFrame,
     region: str,

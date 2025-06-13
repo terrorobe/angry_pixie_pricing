@@ -134,6 +134,19 @@ analysis: Comprehensive 4-panel analysis (default)
 timechart: Time series of daily hours with negative/near-zero prices
 """
     )(func)
+    func = click.option(
+        "--aggregation-level", "-a",
+        type=click.Choice(["daily", "weekly", "monthly"]),
+        default="daily",
+        help="""\
+Aggregation level for timechart (only applies to chart-type=timechart):
+
+\b
+daily: Hours per day (default)
+weekly: Hours per week
+monthly: Hours per month
+"""
+    )(func)
     return func
 
 
