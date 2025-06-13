@@ -240,23 +240,70 @@ The new timechart reveals powerful seasonal patterns:
 - **Chart Generation**: ✅ Enhanced (terminal & PNG with clean CLI)
 - **Code Quality**: ✅ Improved (removed duplicate parameters, simplified logic)
 
+## ✅ COMPLETED: Weekly & Monthly Aggregation for Negative Pricing Timecharts 📊📅
+
+### Latest Session Accomplishments
+Successfully implemented comprehensive aggregation support for negative pricing timechart analysis:
+
+#### 🎯 New Aggregation Level Feature
+1. **Added --aggregation-level Parameter**: Extended CLI with daily/weekly/monthly options for timechart mode
+2. **Weekly Aggregation**: New `calculate_weekly_hours_timeseries()` function using pandas weekly periods
+3. **Monthly Aggregation**: New `calculate_monthly_hours_timeseries()` function using pandas monthly periods
+4. **Unified Interface**: New `calculate_aggregated_hours_timeseries()` wrapper function for all aggregation levels
+5. **Smart Filename Generation**: Auto-generated PNG filenames include aggregation level (e.g., `timechart-weekly`)
+
+#### 🔧 Enhanced Chart Functions
+1. **Terminal Charts**: Updated `create_terminal_negative_pricing_timechart()` to support all aggregation levels
+2. **PNG Charts**: Updated `create_png_negative_pricing_timechart()` with intelligent x-axis formatting for different time periods
+3. **Dynamic Labeling**: Chart titles, y-axis labels, and summaries adapt to aggregation level
+4. **Smart X-Axis**: Automatic formatting (YYYY-MM-DD for daily, YYYY-Wxx for weekly, YYYY-MM for monthly)
+
+#### 📈 Enhanced Usage Examples
+```bash
+# Daily timechart (default)
+angry-pixie negative-pricing --region DE --start-date 2024 --chart-type timechart
+
+# Weekly aggregation 
+angry-pixie negative-pricing --region DE --start-date 2024-05 --chart-type timechart --aggregation-level weekly
+
+# Monthly aggregation with PNG output
+angry-pixie negative-pricing --region AT --start-date 2024 --chart-type timechart --aggregation-level monthly --png
+
+# Creates: images/negative-pricing-timechart-monthly_at_20240101_20250613.png
+```
+
+#### 🎨 Aggregation Benefits
+The new aggregation levels provide different analytical perspectives:
+- **Daily**: Fine-grained view of day-to-day variations, seasonal trends
+- **Weekly**: Smoothed patterns showing weekly cycles and medium-term trends
+- **Monthly**: Long-term seasonal patterns and year-over-year comparisons
+- **Multi-year Analysis**: Clear visualization of renewable energy adoption progress
+
+### Updated System Status
+- **All Core Features**: ✅ Working (negative pricing analysis, duck curves, rolling analysis, timecharts with aggregation)
+- **Data Pipeline**: ✅ Stable (includes 2025 forecast data) 
+- **Chart Generation**: ✅ Enhanced (terminal & PNG with daily/weekly/monthly aggregation)
+- **CLI Interface**: ✅ Comprehensive (clean parameter handling, auto-filenames, aggregation options)
+- **Code Quality**: ✅ Improved (modular aggregation functions, consistent naming)
+
 ## Session Handoff Notes
 
 ### For Next Session
 1. **Environment Setup**: Always start with `source venv/bin/activate` (documented in CLAUDE.md)
 2. **Ready for Enhancement**: Core system is stable, ready for new features or model improvements
 3. **High Priority Next Tasks**:
-   - **Negative Pricing Aggregation Levels**: Add weekly and monthly aggregation options for timecharts (currently only daily)
-   - Improve solar potential model accuracy (consider wind/hydro)
-   - Consider cross-regional comparative analysis features
+   - ✅ ~~**Negative Pricing Aggregation Levels**: Add weekly and monthly aggregation options for timecharts~~ **COMPLETED**
+   - **Solar Model Improvements**: Enhance solar potential accuracy by considering wind/hydro integration
+   - **Cross-Regional Analysis**: Implement comparative analysis features across multiple countries
+   - **Advanced Time Series**: Add year-over-year comparison overlays for timecharts
 
 ### Key Files to Know
 - `src/angry_pixie_pricing/data/base.py` - Abstract caching and data source framework
 - `src/angry_pixie_pricing/data/energy_charts.py` - EnergyCharts.info API implementation  
-- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions (includes new timechart functions)
-- `src/angry_pixie_pricing/main.py` - CLI command definitions (updated with --png flag)
-- `src/angry_pixie_pricing/analysis/negative_pricing.py` - Includes new `calculate_daily_hours_timeseries()` function
-- `src/angry_pixie_pricing/utils/cli_options.py` - Clean CLI option definitions (removed auto/duplicate logic)
+- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions (includes enhanced timechart functions with aggregation)
+- `src/angry_pixie_pricing/main.py` - CLI command definitions (updated with --png flag and aggregation support)
+- `src/angry_pixie_pricing/analysis/negative_pricing.py` - Includes aggregation functions (`calculate_aggregated_hours_timeseries()`)
+- `src/angry_pixie_pricing/utils/cli_options.py` - CLI option definitions (includes aggregation-level parameter)
 
 ### Development Workflow
 1. Use TodoWrite tool to track session progress
@@ -288,6 +335,6 @@ The new timechart reveals powerful seasonal patterns:
 
 ---
 
-*Last updated: Negative pricing timechart and CLI output improvements session*
-*Current status: All major features working, new timechart feature added, clean CLI with --png flag*
-*Next priorities: Weekly/monthly aggregation for timecharts, solar model improvements, cross-regional analysis*
+*Last updated: Weekly & monthly aggregation for negative pricing timecharts session*
+*Current status: All major features working, comprehensive timechart aggregation (daily/weekly/monthly), enhanced CLI*
+*Next priorities: Solar model improvements, cross-regional analysis, advanced time series features*
