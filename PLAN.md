@@ -273,11 +273,13 @@ angry-pixie negative-pricing --region AT --start-date 2024 --chart-type timechar
 ```
 
 #### 🎨 Aggregation Benefits
-The new aggregation levels provide different analytical perspectives:
-- **Daily**: Fine-grained view of day-to-day variations, seasonal trends
-- **Weekly**: Smoothed patterns showing weekly cycles and medium-term trends
-- **Monthly**: Long-term seasonal patterns and year-over-year comparisons
+The new aggregation levels provide different analytical perspectives with comparable scales:
+- **Daily**: Fine-grained view of day-to-day variations, seasonal trends (0-24 hours)
+- **Weekly**: Average daily hours within weeks, smoothed medium-term trends (0-24 hours avg)
+- **Monthly**: Average daily hours within months, long-term seasonal patterns (0-24 hours avg)
 - **Multi-year Analysis**: Clear visualization of renewable energy adoption progress
+
+**Key Fix**: Weekly and monthly aggregations show average daily hours within each period, making all aggregation levels directly comparable on the same 0-24 hour scale.
 
 ### Updated System Status
 - **All Core Features**: ✅ Working (negative pricing analysis, duck curves, rolling analysis, timecharts with aggregation)
