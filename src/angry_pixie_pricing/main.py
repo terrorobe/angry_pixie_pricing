@@ -26,6 +26,8 @@ from .charts.terminal import (
     create_png_seasonal_duck_chart,
     create_terminal_negative_pricing_chart,
     create_png_negative_pricing_chart,
+    create_terminal_negative_pricing_timechart,
+    create_png_negative_pricing_timechart,
 )
 from .analysis.rolling_duck import analyze_rolling_duck_patterns
 from .analysis.negative_pricing import analyze_negative_pricing_comprehensive
@@ -61,6 +63,7 @@ def chart(
     start_date: str,
     end_date: Optional[str],
     output: Optional[str],
+    png: bool,
     no_cache: bool,
     chart_type: str,
     width: Optional[int],
@@ -96,14 +99,14 @@ def chart(
         )
 
         # Generate charts based on chart_type and output format
-        if output:
+        if png or output:
             # PNG output mode - use smart filename generation if no extension provided
-            if not output.lower().endswith('.png'):
-                if '.' not in output:
-                    # User provided just a base name, generate smart filename
-                    output = generate_price_chart_filename(region, start_date_str, end_date_str, chart_type)
-                else:
-                    output += '.png'
+            if png:
+                # Auto-generate filename when using --png flag
+                output = generate_price_chart_filename(region, start_date_str, end_date_str, chart_type)
+            elif not output.lower().endswith('.png'):
+                # Add .png extension if not present
+                output += '.png'
             
             try:
                 if chart_type == "line":
@@ -236,6 +239,7 @@ def duck_factor(
     window: str,
     step: str,
     output: Optional[str],
+    png: bool,
     chart_type: str,
     no_cache: bool,
     width: Optional[int],
@@ -289,23 +293,21 @@ def duck_factor(
         _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data)
         
         # Generate charts
-        if output:
+        if png or output:
             # PNG output mode - use smart filename generation
             try:
                 if chart_type == "time-series":
-                    if not output.lower().endswith('.png'):
-                        if '.' not in output:
-                            output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "timeseries")
-                        else:
-                            output += '.png'
+                    if png:
+                        output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "timeseries")
+                    elif not output.lower().endswith('.png'):
+                        output += '.png'
                     create_png_duck_factor_chart(duck_factors, region, output, window_days, 
                                                 width=width or 12, height=height or 6)
                 elif chart_type == "seasonal":
-                    if not output.lower().endswith('.png'):
-                        if '.' not in output:
-                            output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "seasonal")
-                        else:
-                            output += '.png'
+                    if png:
+                        output = generate_duck_factor_filename(region, start_date_str, end_date_str, window_days, "seasonal")
+                    elif not output.lower().endswith('.png'):
+                        output += '.png'
                     create_png_seasonal_duck_chart(seasonal_data, region, output,
                                                   width=width or 12, height=height or 8)
                 elif chart_type == "multi-window":
@@ -459,7 +461,9 @@ def negative_pricing(
     start_date: str,
     end_date: Optional[str],
     threshold: float,
+    chart_type: str,
     output: Optional[str],
+    png: bool,
     no_cache: bool,
     width: Optional[int],
     height: Optional[int],
@@ -489,38 +493,64 @@ def negative_pricing(
         
         click.echo(f"Retrieved {len(df)} hourly price points")
         
-        # Perform negative pricing analysis
-        click.echo("Analyzing negative pricing patterns...")
-        analysis_results = analyze_negative_pricing_comprehensive(df, region, threshold)
-        
-        if 'error' in analysis_results:
-            click.echo(f"Analysis error: {analysis_results['error']}", err=True)
-            ctx.exit(1)
-        
-        metrics = analysis_results['overall_metrics']
-        seasonal_data = analysis_results['seasonal_patterns']
-        
-        # Display analysis summary
-        _display_negative_pricing_summary(metrics, seasonal_data, region)
-        
-        # Generate charts
-        if output:
-            # PNG output mode
-            if not output.lower().endswith('.png'):
-                if '.' not in output:
-                    output = f"images/negative-pricing_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
-                else:
-                    output += '.png'
+        # Handle different chart types
+        if chart_type == "timechart":
+            # Timechart mode - no need for comprehensive analysis
+            click.echo("Generating daily hours timechart...")
             
-            try:
-                create_png_negative_pricing_chart(df, region, output, width=width or 12, height=height or 8, near_zero_threshold=threshold)
-            except ImportError as e:
-                click.echo(f"Error: {e}", err=True)
-                click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
-                ctx.exit(1)
+            # Handle PNG output - either via --png flag or --output
+            if png or output:
+                # PNG output mode
+                if png:
+                    # Auto-generate filename when using --png flag
+                    output = f"images/negative-pricing-timechart_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                elif not output.lower().endswith('.png'):
+                    # Add .png extension if not present
+                    output += '.png'
+                
+                try:
+                    create_png_negative_pricing_timechart(df, region, output, width=width or 12, height=height or 6, near_zero_threshold=threshold)
+                except ImportError as e:
+                    click.echo(f"Error: {e}", err=True)
+                    click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
+                    ctx.exit(1)
+            else:
+                # Terminal output mode (default)
+                create_terminal_negative_pricing_timechart(df, region, width=width, height=height, near_zero_threshold=threshold)
         else:
-            # Terminal output mode (default)
-            create_terminal_negative_pricing_chart(df, region, width=width, height=height, near_zero_threshold=threshold)
+            # Analysis mode (default)
+            click.echo("Analyzing negative pricing patterns...")
+            analysis_results = analyze_negative_pricing_comprehensive(df, region, threshold)
+            
+            if 'error' in analysis_results:
+                click.echo(f"Analysis error: {analysis_results['error']}", err=True)
+                ctx.exit(1)
+            
+            metrics = analysis_results['overall_metrics']
+            seasonal_data = analysis_results['seasonal_patterns']
+            
+            # Display analysis summary
+            _display_negative_pricing_summary(metrics, seasonal_data, region)
+            
+            # Generate charts
+            if png or output:
+                # PNG output mode
+                if png:
+                    # Auto-generate filename when using --png flag
+                    output = f"images/negative-pricing_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                elif not output.lower().endswith('.png'):
+                    # Add .png extension if not present
+                    output += '.png'
+                
+                try:
+                    create_png_negative_pricing_chart(df, region, output, width=width or 12, height=height or 8, near_zero_threshold=threshold)
+                except ImportError as e:
+                    click.echo(f"Error: {e}", err=True)
+                    click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
+                    ctx.exit(1)
+            else:
+                # Terminal output mode (default)
+                create_terminal_negative_pricing_chart(df, region, width=width, height=height, near_zero_threshold=threshold)
         
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)

@@ -879,6 +879,90 @@ def create_terminal_negative_pricing_chart(
     print()
 
 
+def create_terminal_negative_pricing_timechart(
+    df: pd.DataFrame,
+    region: str,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    near_zero_threshold: float = 5.0,
+) -> None:
+    """
+    Create a terminal timechart showing daily hours with negative/near-zero prices.
+    
+    Args:
+        df: DataFrame with price data
+        region: Region code
+        width: Chart width
+        height: Chart height
+        near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
+    """
+    from ..analysis.negative_pricing import calculate_daily_hours_timeseries
+    
+    # Calculate daily hours
+    daily_data = calculate_daily_hours_timeseries(df, near_zero_threshold)
+    
+    if daily_data.empty:
+        print("No data available for negative pricing timechart")
+        return
+    
+    # Clear any previous plots
+    plt.clear_data()
+    plt.clear_figure()
+    
+    # Prepare data for plotting
+    # Use numeric indices for x-axis instead of date strings to avoid plotext date parsing issues
+    x_values = list(range(len(daily_data)))
+    negative_hours = daily_data['negative_hours'].tolist()
+    near_zero_hours = daily_data['near_zero_hours'].tolist()
+    
+    # Create the plot - use line plot for time series
+    plt.plot(x_values, negative_hours, marker="hd", color="red", label="Negative Prices (<0)")
+    plt.plot(x_values, near_zero_hours, marker="hd", color="orange", label=f"Near-Zero (≤{near_zero_threshold})")
+    
+    # Set title and labels
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    country_name = _get_country_name(region)
+    title = f"Daily Hours with Negative/Near-Zero Prices - {country_name}"
+    subtitle = f"Negative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh"
+    
+    plt.title(title)
+    plt.xlabel("Date")
+    plt.ylabel("Hours per Day")
+    
+    # Set chart size if specified
+    if width:
+        plt.plotsize(width, height or 15)
+    elif height:
+        plt.plotsize(None, height)
+    
+    # Configure x-axis to show meaningful date labels
+    dates = daily_data['date'].dt.strftime('%Y-%m-%d').tolist()
+    num_dates = len(dates)
+    if num_dates > 20:
+        # Show every nth date to avoid crowding
+        step = max(1, num_dates // 10)
+        label_indices = list(range(0, num_dates, step))
+        label_values = [dates[i] for i in label_indices]
+        plt.xticks(label_indices, label_values)
+    else:
+        # Show all dates if there aren't too many
+        plt.xticks(x_values, dates)
+    
+    # Display the chart
+    plt.show()
+    
+    # Print threshold information and summary
+    print(f"Thresholds: {subtitle}")
+    print(f"\nDaily Hours Summary:")
+    print(f"Average negative hours/day: {daily_data['negative_hours'].mean():.1f}")
+    print(f"Average near-zero hours/day: {daily_data['near_zero_hours'].mean():.1f}")
+    print(f"Max negative hours in a day: {daily_data['negative_hours'].max()}")
+    print(f"Max near-zero hours in a day: {daily_data['near_zero_hours'].max()}")
+    print(f"Days with any negative prices: {(daily_data['negative_hours'] > 0).sum()}")
+    print()
+
+
 def create_png_negative_pricing_chart(
     df: pd.DataFrame,
     region: str,
@@ -992,6 +1076,101 @@ def create_png_negative_pricing_chart(
     mpl_plt.close(fig)
     
     print(f"Negative pricing analysis chart saved to: {output_path}")
+
+
+def create_png_negative_pricing_timechart(
+    df: pd.DataFrame,
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 6,
+    near_zero_threshold: float = 5.0,
+) -> None:
+    """
+    Create a PNG timechart showing daily hours with negative/near-zero prices.
+    
+    Args:
+        df: DataFrame with price data
+        region: Region code
+        output_path: Path to save PNG file
+        width: Figure width
+        height: Figure height
+        near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
+    
+    from ..analysis.negative_pricing import calculate_daily_hours_timeseries
+    
+    # Calculate daily hours
+    daily_data = calculate_daily_hours_timeseries(df, near_zero_threshold)
+    
+    if daily_data.empty:
+        print("No data available for negative pricing timechart")
+        return
+    
+    # Create figure
+    fig, ax = mpl_plt.subplots(1, 1, figsize=(width, height))
+    
+    # Plot data
+    ax.plot(daily_data['date'], daily_data['negative_hours'], 
+            marker='o', linewidth=2, markersize=4, color='#DC143C', 
+            label='Negative Prices (<0 EUR/MWh)')
+    ax.plot(daily_data['date'], daily_data['near_zero_hours'], 
+            marker='s', linewidth=2, markersize=4, color='#FF8C00', 
+            label=f'Near-Zero (≤{near_zero_threshold} EUR/MWh)')
+    
+    # Set title and labels
+    country_name = _get_country_name(region)
+    start_date = df["timestamp"].min().strftime("%Y-%m-%d")
+    end_date = df["timestamp"].max().strftime("%Y-%m-%d")
+    
+    ax.set_title(f'Daily Hours with Negative/Near-Zero Prices - {country_name}\n({start_date} to {end_date})', 
+                fontweight='bold', fontsize=14)
+    ax.set_xlabel('Date', fontweight='bold')
+    ax.set_ylabel('Hours per Day', fontweight='bold')
+    
+    # Configure x-axis
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    
+    # Auto-adjust x-axis labels based on date range
+    num_days = len(daily_data)
+    if num_days > 365:
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    elif num_days > 90:
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+    elif num_days > 30:
+        ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+    else:
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, num_days // 10)))
+    
+    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    # Add grid and legend
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right')
+    
+    # Set y-axis to start at 0
+    ax.set_ylim(bottom=0)
+    
+    # Add summary text box
+    avg_negative = daily_data['negative_hours'].mean()
+    avg_near_zero = daily_data['near_zero_hours'].mean()
+    max_negative = daily_data['negative_hours'].max()
+    max_near_zero = daily_data['near_zero_hours'].max()
+    days_with_negative = (daily_data['negative_hours'] > 0).sum()
+    
+    summary_text = f'Avg negative: {avg_negative:.1f} hrs/day\nAvg near-zero: {avg_near_zero:.1f} hrs/day\nMax negative: {max_negative} hrs\nDays with negative: {days_with_negative}'
+    ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
+            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
+            fontsize=10)
+    
+    # Adjust layout and save
+    mpl_plt.tight_layout()
+    mpl_plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    mpl_plt.close(fig)
+    
+    print(f"Negative pricing timechart saved to: {output_path}")
 
 
 def _calculate_simple_trend(values: list) -> str:

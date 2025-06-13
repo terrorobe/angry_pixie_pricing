@@ -197,22 +197,66 @@ Successfully resolved critical bugs and enhanced user experience:
 - **Chart Generation**: ✅ Enhanced (clear threshold labeling)
 - **Python Environment**: ✅ Documented (comprehensive venv guide)
 
+## ✅ COMPLETED: CLI Output Flag Improvements & Negative Pricing Timechart 📊⚡
+
+### Latest Session Accomplishments
+Successfully implemented negative pricing timechart feature and cleaned up CLI output handling:
+
+#### 🎯 New Negative Pricing Timechart Feature
+1. **Added Chart Type Option**: Extended `--chart-type` parameter with `timechart` option showing daily hours with negative/near-zero prices
+2. **Daily Hours Calculation**: New `calculate_daily_hours_timeseries()` function aggregating hourly data into daily counts
+3. **Terminal & PNG Visualization**: Both terminal and high-resolution PNG charts showing time series of negative pricing hours
+4. **Smart Date Handling**: Auto-adjusting x-axis labels based on data range (daily/weekly/monthly)
+5. **Summary Statistics**: Charts include average hours, max hours, and days with negative prices
+
+#### 🔧 CLI Output Flag Improvements  
+1. **Clean --png Flag**: Added `--png` flag for auto-generated filenames (no argument needed)
+2. **Removed Clunky "auto"**: Eliminated confusing `-o auto` syntax and `__AUTO_GENERATE__` logic
+3. **Fixed Duplicate Parameters**: Resolved CLI warnings about duplicate `--output` parameters
+4. **Consistent Behavior**: All commands (`chart`, `duck-factor`, `negative-pricing`) now have unified output handling
+
+#### 📈 Usage Examples
+```bash
+# Terminal timechart (default)
+angry-pixie negative-pricing --region DE --start-date 2024 --chart-type timechart
+
+# Auto-generated PNG filename
+angry-pixie negative-pricing --region DE --start-date 2024 --chart-type timechart --png
+
+# Custom PNG filename  
+angry-pixie negative-pricing --region DE --start-date 2024 --chart-type timechart -o my_chart.png
+```
+
+#### 🎨 Timechart Insights
+The new timechart reveals powerful seasonal patterns:
+- **Summer peaks**: May-August show 5-15+ hours of negative pricing per day
+- **Winter lows**: December-February show minimal negative pricing
+- **Daily variations**: Some days have 0 hours, others up to 16+ hours
+- **Trend visibility**: Multi-year data shows renewable energy adoption progress
+
+### Current System Status
+- **All Core Features**: ✅ Working (negative pricing analysis, duck curves, rolling analysis, timecharts)
+- **Data Pipeline**: ✅ Stable (includes 2025 forecast data)
+- **Chart Generation**: ✅ Enhanced (terminal & PNG with clean CLI)
+- **Code Quality**: ✅ Improved (removed duplicate parameters, simplified logic)
+
 ## Session Handoff Notes
 
 ### For Next Session
 1. **Environment Setup**: Always start with `source venv/bin/activate` (documented in CLAUDE.md)
 2. **Ready for Enhancement**: Core system is stable, ready for new features or model improvements
-3. **Pending Items**:
-   - Fix CLI duplicate --output parameter warning (low priority)
+3. **High Priority Next Tasks**:
+   - **Negative Pricing Aggregation Levels**: Add weekly and monthly aggregation options for timecharts (currently only daily)
    - Improve solar potential model accuracy (consider wind/hydro)
    - Consider cross-regional comparative analysis features
 
 ### Key Files to Know
 - `src/angry_pixie_pricing/data/base.py` - Abstract caching and data source framework
 - `src/angry_pixie_pricing/data/energy_charts.py` - EnergyCharts.info API implementation  
-- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions (now with threshold display)
-- `src/angry_pixie_pricing/main.py` - CLI command definitions (numpy import added)
-- `src/angry_pixie_pricing/analysis/negative_pricing.py` - Fixed pandas groupby issue
+- `src/angry_pixie_pricing/charts/terminal.py` - All visualization functions (includes new timechart functions)
+- `src/angry_pixie_pricing/main.py` - CLI command definitions (updated with --png flag)
+- `src/angry_pixie_pricing/analysis/negative_pricing.py` - Includes new `calculate_daily_hours_timeseries()` function
+- `src/angry_pixie_pricing/utils/cli_options.py` - Clean CLI option definitions (removed auto/duplicate logic)
 
 ### Development Workflow
 1. Use TodoWrite tool to track session progress
@@ -244,6 +288,6 @@ Successfully resolved critical bugs and enhanced user experience:
 
 ---
 
-*Last updated: Bug fix and usability improvement session*
-*Current status: All major features working, system stable and well-documented*
-*Next priorities: Solar model improvements, CLI warning fixes, cross-regional analysis*
+*Last updated: Negative pricing timechart and CLI output improvements session*
+*Current status: All major features working, new timechart feature added, clean CLI with --png flag*
+*Next priorities: Weekly/monthly aggregation for timecharts, solar model improvements, cross-regional analysis*

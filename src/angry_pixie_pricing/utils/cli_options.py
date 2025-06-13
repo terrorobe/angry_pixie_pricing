@@ -31,8 +31,14 @@ def add_region_option(func):
 def add_output_options(func):
     """Decorator to add output-related options to a command."""
     func = click.option(
-        "--output", "-o", 
-        help="Output PNG file path (enables PNG mode)"
+        "--output", "-o",
+        default=None,
+        help="Output PNG file path (enables PNG mode)."
+    )(func)
+    func = click.option(
+        "--png",
+        is_flag=True,
+        help="Generate PNG with auto-generated filename."
     )(func)
     func = click.option(
         "--width", 
@@ -106,10 +112,6 @@ hourly-workday: Workday-only duck curve pattern
 all: Display line, daily, and summary together
 """
     )(func)
-    func = click.option(
-        "--output", "-o", 
-        help="Output PNG file path (enables PNG mode, auto-adds .png extension)"
-    )(func)
     return func
 
 
@@ -119,6 +121,18 @@ def add_negative_pricing_options(func):
         "--threshold", 
         default=5.0, 
         help="Near-zero price threshold (EUR/MWh)"
+    )(func)
+    func = click.option(
+        "--chart-type", "-t",
+        type=click.Choice(["analysis", "timechart"]),
+        default="analysis",
+        help="""\
+Chart type options:
+
+\b
+analysis: Comprehensive 4-panel analysis (default)
+timechart: Time series of daily hours with negative/near-zero prices
+"""
     )(func)
     return func
 

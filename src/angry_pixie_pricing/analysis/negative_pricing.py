@@ -357,6 +357,43 @@ class NegativePricingAnalyzer:
         return max_consecutive
 
 
+def calculate_daily_hours_timeseries(
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0
+) -> pd.DataFrame:
+    """
+    Calculate daily hours with negative/near-zero prices for timechart visualization.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        
+    Returns:
+        DataFrame with columns ['date', 'negative_hours', 'near_zero_hours']
+    """
+    if df.empty:
+        return pd.DataFrame(columns=['date', 'negative_hours', 'near_zero_hours'])
+    
+    # Add date column and calculate daily aggregations
+    df_daily = df.copy()
+    df_daily['date'] = df_daily['timestamp'].dt.date
+    df_daily['is_negative'] = df_daily['price'] < 0
+    df_daily['is_near_zero'] = df_daily['price'] <= near_zero_threshold
+    
+    # Group by date and count hours
+    daily_counts = df_daily.groupby('date').agg({
+        'is_negative': 'sum',
+        'is_near_zero': 'sum'
+    }).reset_index()
+    
+    daily_counts.columns = ['date', 'negative_hours', 'near_zero_hours']
+    
+    # Convert date back to datetime for plotting
+    daily_counts['date'] = pd.to_datetime(daily_counts['date'])
+    
+    return daily_counts.sort_values('date')
+
+
 def analyze_negative_pricing_comprehensive(
     df: pd.DataFrame,
     region: str,
