@@ -136,7 +136,7 @@ timechart: Time series of daily hours with negative/near-zero prices
     )(func)
     func = click.option(
         "--aggregation-level", "-a",
-        type=click.Choice(["daily", "weekly", "monthly"]),
+        type=click.Choice(["daily", "weekly", "monthly", "solar-quarters"]),
         default="daily",
         help="""\
 Aggregation level for timechart (only applies to chart-type=timechart):
@@ -145,6 +145,7 @@ Aggregation level for timechart (only applies to chart-type=timechart):
 daily: Hours per day (default)
 weekly: Hours per week
 monthly: Hours per month
+solar-quarters: Hours per solar quarter (Peak Sun: May-Jul, Rising Sun: Feb-Apr, Fading Sun: Aug-Oct, Low Sun: Nov-Jan)
 """
     )(func)
     return func

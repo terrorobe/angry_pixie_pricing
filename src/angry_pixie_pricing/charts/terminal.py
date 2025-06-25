@@ -896,7 +896,7 @@ def create_terminal_negative_pricing_timechart(
         width: Chart width
         height: Chart height
         near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
-        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
+        aggregation_level: Aggregation level - "daily", "weekly", "monthly", or "solar-quarters"
     """
     from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries
     
@@ -929,7 +929,8 @@ def create_terminal_negative_pricing_timechart(
     aggregation_labels = {
         "daily": ("Daily Hours", "Hours per Day"),
         "weekly": ("Weekly Average Daily Hours", "Average Hours per Day"),
-        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day")
+        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day"),
+        "solar-quarters": ("Solar Quarter Average Daily Hours", "Average Hours per Day")
     }
     
     title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
@@ -952,8 +953,14 @@ def create_terminal_negative_pricing_timechart(
         labels = time_periods.dt.strftime('%Y-%m-%d').tolist()
     elif aggregation_level == "weekly":
         labels = time_periods.dt.strftime('%Y-W%U').tolist()  # Year-Week format
-    else:  # monthly
+    elif aggregation_level == "monthly":
         labels = time_periods.dt.strftime('%Y-%m').tolist()
+    else:  # solar-quarters
+        # Use quarter names if available, otherwise use year-quarter format
+        if 'quarter_name' in aggregated_data.columns:
+            labels = [f"{row['time_period'].strftime('%Y')} {row['quarter_name']}" for _, row in aggregated_data.iterrows()]
+        else:
+            labels = [f"{ts.strftime('%Y')}-Q{((ts.month-1)//3)+1}" for ts in time_periods]
     
     num_periods = len(labels)
     if num_periods > 20:
@@ -986,6 +993,12 @@ def create_terminal_negative_pricing_timechart(
     print(f"Max negative {unit_label} in a {period_unit}: {aggregated_data['negative_hours'].max():.1f}")
     print(f"Max near-zero {unit_label} in a {period_unit}: {aggregated_data['near_zero_hours'].max():.1f}")
     print(f"{aggregation_labels[aggregation_level][0].split()[0]} periods with any negative prices: {(aggregated_data['negative_hours'] > 0).sum()}")
+    
+    # Add solar quarter explanation if applicable
+    if aggregation_level == "solar-quarters":
+        print("\nSolar Quarter Months:")
+        print("• Peak Sun (May-Jul) • Rising Sun (Feb-Apr) • Fading Sun (Aug-Oct) • Low Sun (Nov-Jan)")
+    
     print()
 
 
@@ -1123,7 +1136,7 @@ def create_png_negative_pricing_timechart(
         width: Figure width
         height: Figure height
         near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
-        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
+        aggregation_level: Aggregation level - "daily", "weekly", "monthly", or "solar-quarters"
     """
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
@@ -1156,7 +1169,8 @@ def create_png_negative_pricing_timechart(
     aggregation_labels = {
         "daily": ("Daily Hours", "Hours per Day"),
         "weekly": ("Weekly Average Daily Hours", "Average Hours per Day"),
-        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day")
+        "monthly": ("Monthly Average Daily Hours", "Average Hours per Day"),
+        "solar-quarters": ("Solar Quarter Average Daily Hours", "Average Hours per Day")
     }
     
     title_text, ylabel_text = aggregation_labels.get(aggregation_level, ("Daily Hours", "Hours per Day"))
@@ -1186,12 +1200,33 @@ def create_png_negative_pricing_timechart(
             ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
         else:
             ax.xaxis.set_major_locator(mdates.MonthLocator())
-    else:  # monthly
+    elif aggregation_level == "monthly":
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
         if num_periods > 24:
             ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
         else:
             ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    else:  # solar-quarters
+        # For solar quarters, use custom quarter names if available
+        if 'quarter_name' in aggregated_data.columns:
+            # Create custom tick labels using quarter names and years
+            tick_labels = []
+            tick_positions = []
+            for i, (_, row) in enumerate(aggregated_data.iterrows()):
+                year = row['time_period'].year
+                quarter_name = row['quarter_name']
+                tick_labels.append(f"{year}\n{quarter_name}")
+                tick_positions.append(row['time_period'])
+            
+            ax.set_xticks(tick_positions)
+            ax.set_xticklabels(tick_labels, fontsize=10)
+        else:
+            # Fallback to quarter-like formatting
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-Q%q'))
+            if num_periods > 8:
+                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
+            else:
+                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     
     mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
     
@@ -1218,6 +1253,10 @@ def create_png_negative_pricing_timechart(
         max_unit_label = "avg hrs/day"
     
     summary_text = f'Avg negative: {avg_negative:.1f} {unit_label}\nAvg near-zero: {avg_near_zero:.1f} {unit_label}\nMax negative: {max_negative:.1f} {max_unit_label}\n{title_text.split()[0]} periods with negative: {periods_with_negative}'
+    
+    # Add solar quarter explanation if applicable
+    if aggregation_level == "solar-quarters":
+        summary_text += '\n\nSolar Quarter Months:\nPeak Sun (May-Jul), Rising Sun (Feb-Apr)\nFading Sun (Aug-Oct), Low Sun (Nov-Jan)'
     ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
             fontsize=10)

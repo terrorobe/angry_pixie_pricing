@@ -478,6 +478,87 @@ def calculate_monthly_hours_timeseries(
     return result.sort_values('month_start')
 
 
+def calculate_solar_quarter_hours_timeseries(
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0
+) -> pd.DataFrame:
+    """
+    Calculate solar quarter average daily hours with negative/near-zero prices for timechart visualization.
+    
+    Solar quarters based on European solar irradiation patterns:
+    - Peak Sun (May-Jul): Peak irradiation months
+    - Rising Sun (Feb-Apr): Solar ramp-up period  
+    - Fading Sun (Aug-Oct): Solar decline but still significant
+    - Low Sun (Nov-Jan): Minimal irradiation
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        
+    Returns:
+        DataFrame with columns ['quarter_start', 'quarter_name', 'negative_hours', 'near_zero_hours']
+        where hours represent average daily hours within each solar quarter
+    """
+    if df.empty:
+        return pd.DataFrame(columns=['quarter_start', 'quarter_name', 'negative_hours', 'near_zero_hours'])
+    
+    # Define solar quarter mapping
+    def get_solar_quarter(month):
+        """Map calendar month to solar quarter."""
+        if month in [5, 6, 7]:  # May-Jul
+            return ('Peak Sun', 2)  # Q2
+        elif month in [2, 3, 4]:  # Feb-Apr  
+            return ('Rising Sun', 1)  # Q1
+        elif month in [8, 9, 10]:  # Aug-Oct
+            return ('Fading Sun', 3)  # Q3
+        else:  # Nov, Dec, Jan
+            return ('Low Sun', 4)  # Q4
+    
+    # Add solar quarter columns
+    df_solar = df.copy()
+    df_solar['month'] = df_solar['timestamp'].dt.month
+    df_solar['year'] = df_solar['timestamp'].dt.year
+    df_solar[['quarter_name', 'quarter_num']] = df_solar['month'].apply(
+        lambda m: pd.Series(get_solar_quarter(m))
+    )
+    
+    # Create quarter start dates (using standard quarters for consistency)
+    # Q1: Feb-Apr -> Jan 1, Q2: May-Jul -> Apr 1, Q3: Aug-Oct -> Jul 1, Q4: Nov-Jan -> Oct 1
+    quarter_start_months = {1: 1, 2: 4, 3: 7, 4: 10}  # Approximate quarter starts
+    df_solar['quarter_start'] = df_solar.apply(
+        lambda row: pd.Timestamp(row['year'], quarter_start_months[row['quarter_num']], 1),
+        axis=1
+    )
+    
+    # Handle year transitions for Q4 (Nov-Jan spans years)
+    # For Nov-Dec, use current year. For Jan, use previous year's Q4
+    mask_jan = df_solar['month'] == 1
+    df_solar.loc[mask_jan, 'quarter_start'] = df_solar.loc[mask_jan].apply(
+        lambda row: pd.Timestamp(row['year'] - 1, 10, 1), axis=1
+    )
+    
+    # Add boolean columns for negative and near-zero pricing
+    df_solar['is_negative'] = df_solar['price'] < 0
+    df_solar['is_near_zero'] = df_solar['price'] <= near_zero_threshold
+    
+    # Group by quarter and calculate aggregations
+    quarter_agg = df_solar.groupby(['quarter_start', 'quarter_name']).agg({
+        'is_negative': 'sum',
+        'is_near_zero': 'sum',
+        'timestamp': 'count'  # Total hours in the quarter
+    }).reset_index()
+    
+    # Calculate average daily hours within each quarter
+    quarter_agg['days_in_quarter'] = quarter_agg['timestamp'] / 24  # Convert hours to days
+    quarter_agg['negative_hours'] = quarter_agg['is_negative'] / quarter_agg['days_in_quarter']
+    quarter_agg['near_zero_hours'] = quarter_agg['is_near_zero'] / quarter_agg['days_in_quarter']
+    
+    # Return only the columns we need
+    result = quarter_agg[['quarter_start', 'quarter_name', 'negative_hours', 'near_zero_hours']].copy()
+    
+    return result.sort_values('quarter_start')
+
+
 def calculate_aggregated_hours_timeseries(
     df: pd.DataFrame,
     aggregation_level: str = "daily",
@@ -488,7 +569,7 @@ def calculate_aggregated_hours_timeseries(
     
     Args:
         df: DataFrame with columns ['timestamp', 'price', 'unit']
-        aggregation_level: Aggregation level - "daily", "weekly", or "monthly"
+        aggregation_level: Aggregation level - "daily", "weekly", "monthly", or "solar-quarters"
         near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
         
     Returns:
@@ -504,8 +585,12 @@ def calculate_aggregated_hours_timeseries(
     elif aggregation_level == "monthly":
         result = calculate_monthly_hours_timeseries(df, near_zero_threshold)
         result = result.rename(columns={'month_start': 'time_period'})
+    elif aggregation_level == "solar-quarters":
+        result = calculate_solar_quarter_hours_timeseries(df, near_zero_threshold)
+        result = result.rename(columns={'quarter_start': 'time_period'})
+        # Keep quarter_name column for chart labeling
     else:
-        raise ValueError(f"Invalid aggregation_level: {aggregation_level}. Must be 'daily', 'weekly', or 'monthly'")
+        raise ValueError(f"Invalid aggregation_level: {aggregation_level}. Must be 'daily', 'weekly', 'monthly', or 'solar-quarters'")
     
     return result
 
