@@ -559,6 +559,96 @@ def calculate_solar_quarter_hours_timeseries(
     return result.sort_values('quarter_start')
 
 
+def calculate_aggregated_hours_timeseries_with_severity(
+    df: pd.DataFrame,
+    aggregation_level: str = "daily",
+    near_zero_threshold: float = 10.0,
+    severe_threshold: float = -50.0,
+    extreme_threshold: float = -100.0,
+    cheap_threshold: float = 40.0
+) -> pd.DataFrame:
+    """
+    Calculate aggregated hours with different severity levels of negative prices.
+    
+    Args:
+        df: DataFrame with columns ['timestamp', 'price', 'unit']
+        aggregation_level: Aggregation level - "daily", "weekly", "monthly", or "solar-quarters"
+        near_zero_threshold: Price threshold for "near-zero" classification (EUR/MWh)
+        severe_threshold: Price threshold for "severe" negative prices (EUR/MWh)
+        extreme_threshold: Price threshold for "extreme" negative prices (EUR/MWh)
+        
+    Returns:
+        DataFrame with time_period, extreme_hours, severe_hours, negative_hours, near_zero_hours
+    """
+    if df.empty:
+        return pd.DataFrame()
+    
+    # Create severity classification columns
+    df_work = df.copy()
+    df_work['is_extreme'] = df_work['price'] < extreme_threshold
+    df_work['is_severe'] = df_work['price'] < severe_threshold
+    df_work['is_negative'] = df_work['price'] < 0
+    df_work['is_near_zero'] = df_work['price'] <= near_zero_threshold
+    df_work['is_cheap'] = df_work['price'] <= cheap_threshold
+    
+    if aggregation_level == "daily":
+        df_work['time_period'] = df_work['timestamp'].dt.date
+        group_col = 'time_period'
+    elif aggregation_level == "weekly":
+        df_work['time_period'] = df_work['timestamp'].dt.to_period('W').dt.start_time
+        group_col = 'time_period'
+    elif aggregation_level == "monthly":
+        df_work['time_period'] = df_work['timestamp'].dt.to_period('M').dt.start_time
+        group_col = 'time_period'
+    elif aggregation_level == "solar-quarters":
+        # Reuse existing solar quarter calculation
+        result_basic = calculate_solar_quarter_hours_timeseries(df, near_zero_threshold)
+        # TODO: Enhance with severity levels
+        return result_basic.rename(columns={'quarter_start': 'time_period'})
+    else:
+        raise ValueError(f"Unknown aggregation level: {aggregation_level}")
+    
+    # Aggregate by time period
+    if aggregation_level in ["weekly", "monthly"]:
+        # For weekly/monthly, calculate average daily hours
+        agg_result = df_work.groupby(group_col).agg({
+            'is_extreme': 'sum',
+            'is_severe': 'sum',
+            'is_negative': 'sum',
+            'is_near_zero': 'sum',
+            'is_cheap': 'sum',
+            'timestamp': 'count'  # Total hours
+        }).reset_index()
+        
+        # Convert to average daily hours
+        agg_result['days_in_period'] = agg_result['timestamp'] / 24
+        agg_result['extreme_hours'] = agg_result['is_extreme'] / agg_result['days_in_period']
+        agg_result['severe_hours'] = agg_result['is_severe'] / agg_result['days_in_period']
+        agg_result['negative_hours'] = agg_result['is_negative'] / agg_result['days_in_period']
+        agg_result['near_zero_hours'] = agg_result['is_near_zero'] / agg_result['days_in_period']
+        agg_result['cheap_hours'] = agg_result['is_cheap'] / agg_result['days_in_period']
+    else:
+        # For daily, just sum the hours
+        agg_result = df_work.groupby(group_col).agg({
+            'is_extreme': 'sum',
+            'is_severe': 'sum',
+            'is_negative': 'sum',
+            'is_near_zero': 'sum',
+            'is_cheap': 'sum'
+        }).reset_index()
+        
+        agg_result.rename(columns={
+            'is_extreme': 'extreme_hours',
+            'is_severe': 'severe_hours',
+            'is_negative': 'negative_hours',
+            'is_near_zero': 'near_zero_hours',
+            'is_cheap': 'cheap_hours'
+        }, inplace=True)
+    
+    # Select final columns
+    return agg_result[[group_col, 'extreme_hours', 'severe_hours', 'negative_hours', 'near_zero_hours', 'cheap_hours']]
+
+
 def calculate_aggregated_hours_timeseries(
     df: pd.DataFrame,
     aggregation_level: str = "daily",

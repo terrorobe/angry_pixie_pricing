@@ -884,7 +884,10 @@ def create_terminal_negative_pricing_timechart(
     region: str,
     width: Optional[int] = None,
     height: Optional[int] = None,
-    near_zero_threshold: float = 5.0,
+    near_zero_threshold: float = 10.0,
+    severe_threshold: float = -50.0,
+    extreme_threshold: float = -100.0,
+    cheap_threshold: float = 40.0,
     aggregation_level: str = "daily",
 ) -> None:
     """
@@ -900,8 +903,19 @@ def create_terminal_negative_pricing_timechart(
     """
     from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries
     
-    # Calculate aggregated hours
-    aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
+    # Calculate aggregated hours with additional severity levels
+    from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries_with_severity
+    
+    # Try to use enhanced function if available, otherwise fall back
+    try:
+        aggregated_data = calculate_aggregated_hours_timeseries_with_severity(
+            df, aggregation_level, near_zero_threshold, severe_threshold, extreme_threshold, cheap_threshold
+        )
+        has_severity = True
+    except (ImportError, AttributeError, TypeError):
+        # Fall back to basic function
+        aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
+        has_severity = False
     
     if aggregated_data.empty:
         print("No data available for negative pricing timechart")
@@ -914,12 +928,29 @@ def create_terminal_negative_pricing_timechart(
     # Prepare data for plotting
     # Use numeric indices for x-axis instead of date strings to avoid plotext date parsing issues
     x_values = list(range(len(aggregated_data)))
-    negative_hours = aggregated_data['negative_hours'].tolist()
-    near_zero_hours = aggregated_data['near_zero_hours'].tolist()
     
-    # Create the plot - use line plot for time series
-    plt.plot(x_values, negative_hours, marker="hd", color="red", label="Negative Prices (<0)")
-    plt.plot(x_values, near_zero_hours, marker="hd", color="orange", label=f"Near-Zero (≤{near_zero_threshold})")
+    if has_severity and 'severe_hours' in aggregated_data.columns:
+        # Plot all severity levels
+        extreme_hours = aggregated_data['extreme_hours'].tolist()
+        severe_hours = aggregated_data['severe_hours'].tolist()
+        negative_hours = aggregated_data['negative_hours'].tolist()
+        near_zero_hours = aggregated_data['near_zero_hours'].tolist()
+        cheap_hours = aggregated_data['cheap_hours'].tolist() if 'cheap_hours' in aggregated_data.columns else None
+        
+        # Create the plot - use line plot for time series with different colors
+        plt.plot(x_values, extreme_hours, marker="hd", color="red", label=f"Extreme (<{extreme_threshold})")
+        plt.plot(x_values, severe_hours, marker="hd", color="magenta", label=f"Severe (<{severe_threshold})")
+        plt.plot(x_values, negative_hours, marker="hd", color="yellow", label="Negative (<0)")
+        plt.plot(x_values, near_zero_hours, marker="hd", color="cyan", label=f"Near-Zero (≤{near_zero_threshold})")
+        if cheap_hours:
+            plt.plot(x_values, cheap_hours, marker="hd", color="green", label=f"Cheap (≤{cheap_threshold})")
+    else:
+        # Fall back to basic two-line chart
+        negative_hours = aggregated_data['negative_hours'].tolist()
+        near_zero_hours = aggregated_data['near_zero_hours'].tolist()
+        
+        plt.plot(x_values, negative_hours, marker="hd", color="red", label="Negative Prices (<0)")
+        plt.plot(x_values, near_zero_hours, marker="hd", color="orange", label=f"Near-Zero (≤{near_zero_threshold})")
     
     # Set title and labels based on aggregation level
     start_date = df["timestamp"].min().strftime("%Y-%m-%d")
@@ -1123,7 +1154,10 @@ def create_png_negative_pricing_timechart(
     output_path: str,
     width: int = 12,
     height: int = 6,
-    near_zero_threshold: float = 5.0,
+    near_zero_threshold: float = 10.0,
+    severe_threshold: float = -50.0,
+    extreme_threshold: float = -100.0,
+    cheap_threshold: float = 40.0,
     aggregation_level: str = "daily",
 ) -> None:
     """
@@ -1141,10 +1175,18 @@ def create_png_negative_pricing_timechart(
     if not MATPLOTLIB_AVAILABLE:
         raise ImportError("matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0")
     
-    from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries
+    from ..analysis.negative_pricing import calculate_aggregated_hours_timeseries, calculate_aggregated_hours_timeseries_with_severity
     
-    # Calculate aggregated hours
-    aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
+    # Try to use enhanced function with severity levels
+    try:
+        aggregated_data = calculate_aggregated_hours_timeseries_with_severity(
+            df, aggregation_level, near_zero_threshold, severe_threshold, extreme_threshold, cheap_threshold
+        )
+        has_severity = True
+    except (ImportError, AttributeError, TypeError):
+        # Fall back to basic function
+        aggregated_data = calculate_aggregated_hours_timeseries(df, aggregation_level, near_zero_threshold)
+        has_severity = False
     
     if aggregated_data.empty:
         print("No data available for negative pricing timechart")
@@ -1154,12 +1196,32 @@ def create_png_negative_pricing_timechart(
     fig, ax = mpl_plt.subplots(1, 1, figsize=(width, height))
     
     # Plot data
-    ax.plot(aggregated_data['time_period'], aggregated_data['negative_hours'], 
-            marker='o', linewidth=2, markersize=4, color='#DC143C', 
-            label='Negative Prices (<0 EUR/MWh)')
-    ax.plot(aggregated_data['time_period'], aggregated_data['near_zero_hours'], 
-            marker='s', linewidth=2, markersize=4, color='#FF8C00', 
-            label=f'Near-Zero (≤{near_zero_threshold} EUR/MWh)')
+    if has_severity and 'severe_hours' in aggregated_data.columns:
+        # Plot all severity levels with distinct colors, ordered from least to most severe for logical legend order
+        if 'cheap_hours' in aggregated_data.columns:
+            ax.plot(aggregated_data['time_period'], aggregated_data['cheap_hours'], 
+                    marker='s', linewidth=2, markersize=4, color='#32CD32',  # Lime green
+                    label=f'Cheap (≤{cheap_threshold} EUR/MWh)')
+        ax.plot(aggregated_data['time_period'], aggregated_data['near_zero_hours'], 
+                marker='s', linewidth=2, markersize=4, color='#FFA500',  # Orange
+                label=f'Near-Zero (≤{near_zero_threshold} EUR/MWh)')
+        ax.plot(aggregated_data['time_period'], aggregated_data['negative_hours'], 
+                marker='o', linewidth=2, markersize=4, color='#FF6347',  # Tomato
+                label='Negative (<0 EUR/MWh)')
+        ax.plot(aggregated_data['time_period'], aggregated_data['severe_hours'], 
+                marker='o', linewidth=2, markersize=4, color='#DC143C',  # Crimson
+                label=f'Severe (<{severe_threshold} EUR/MWh)')
+        ax.plot(aggregated_data['time_period'], aggregated_data['extreme_hours'], 
+                marker='o', linewidth=2, markersize=5, color='#8B0000',  # Dark red
+                label=f'Extreme (<{extreme_threshold} EUR/MWh)')
+    else:
+        # Fall back to basic two-line chart
+        ax.plot(aggregated_data['time_period'], aggregated_data['negative_hours'], 
+                marker='o', linewidth=2, markersize=4, color='#DC143C', 
+                label='Negative Prices (<0 EUR/MWh)')
+        ax.plot(aggregated_data['time_period'], aggregated_data['near_zero_hours'], 
+                marker='s', linewidth=2, markersize=4, color='#FF8C00', 
+                label=f'Near-Zero (≤{near_zero_threshold} EUR/MWh)')
     
     # Set title and labels based on aggregation level
     country_name = _get_country_name(region)

@@ -984,6 +984,9 @@ def negative_pricing(
     start_date: str,
     end_date: Optional[str],
     threshold: float,
+    severe_threshold: float,
+    extreme_threshold: float,
+    cheap_threshold: float,
     chart_type: str,
     aggregation_level: str,
     output: Optional[str],
@@ -1033,14 +1036,20 @@ def negative_pricing(
                     output += '.png'
                 
                 try:
-                    create_png_negative_pricing_timechart(df, region, output, width=width or 12, height=height or 6, near_zero_threshold=threshold, aggregation_level=aggregation_level)
+                    create_png_negative_pricing_timechart(df, region, output, width=width or 12, height=height or 6, 
+                                                         near_zero_threshold=threshold, severe_threshold=severe_threshold,
+                                                         extreme_threshold=extreme_threshold, cheap_threshold=cheap_threshold,
+                                                         aggregation_level=aggregation_level)
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
                     ctx.exit(1)
             else:
                 # Terminal output mode (default)
-                create_terminal_negative_pricing_timechart(df, region, width=width, height=height, near_zero_threshold=threshold, aggregation_level=aggregation_level)
+                create_terminal_negative_pricing_timechart(df, region, width=width, height=height, 
+                                                          near_zero_threshold=threshold, severe_threshold=severe_threshold,
+                                                          extreme_threshold=extreme_threshold, cheap_threshold=cheap_threshold,
+                                                          aggregation_level=aggregation_level)
         else:
             # Analysis mode (default)
             click.echo("Analyzing negative pricing patterns...")

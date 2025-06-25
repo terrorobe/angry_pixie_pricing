@@ -119,8 +119,23 @@ def add_negative_pricing_options(func):
     """Decorator to add negative pricing specific options."""
     func = click.option(
         "--threshold", 
-        default=5.0, 
+        default=10.0, 
         help="Near-zero price threshold (EUR/MWh)"
+    )(func)
+    func = click.option(
+        "--severe-threshold", 
+        default=-50.0, 
+        help="Severe negative price threshold (EUR/MWh, default: -50)"
+    )(func)
+    func = click.option(
+        "--extreme-threshold", 
+        default=-100.0, 
+        help="Extreme negative price threshold (EUR/MWh, default: -100)"
+    )(func)
+    func = click.option(
+        "--cheap-threshold", 
+        default=40.0, 
+        help="Cheap price threshold (EUR/MWh, default: 40)"
     )(func)
     func = click.option(
         "--chart-type", "-t",
