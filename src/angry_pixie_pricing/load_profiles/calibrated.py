@@ -106,8 +106,8 @@ class CalibratedProfile(LoadProfile):
         result = pd.DataFrame(index=timestamps)
 
         # Get template pattern (24 hours * 4 = 96 intervals)
-        template_power = template_day["power_kw"].values
-        template_energy = template_day["energy_kwh"].values
+        template_power = template_day["power_kw"].to_numpy()
+        template_energy = template_day["energy_kwh"].to_numpy()
 
         # Replicate pattern
         power_values = []

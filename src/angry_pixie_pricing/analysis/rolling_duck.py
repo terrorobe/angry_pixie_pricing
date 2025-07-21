@@ -194,7 +194,7 @@ class RollingDuckAnalyzer:
             ss_tot = np.sum((df["duck_factor"] - df["duck_factor"].mean()) ** 2)
             r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
 
-        except Exception:
+        except (ValueError, np.linalg.LinAlgError):
             trend_slope = 0
             r_squared = 0
 
@@ -210,7 +210,7 @@ class RollingDuckAnalyzer:
                 vol_dates = df.loc[rolling_volatility.notna(), "date_numeric"]
                 vol_coef = np.polyfit(vol_dates, rolling_volatility.dropna(), 1)
                 volatility_trend = vol_coef[0] * (365.25 * 24 * 3600)  # Per year
-            except Exception:
+            except (ValueError, np.linalg.LinAlgError):
                 pass
 
         # Inflection points (significant changes in trend)
@@ -310,7 +310,7 @@ class RollingDuckAnalyzer:
                 x = pd.to_datetime(subset["date"]).astype(np.int64) / 10**9
                 coef = np.polyfit(x, subset["duck_factor"], 1)
                 trends.append(coef[0])
-            except Exception:
+            except (ValueError, np.linalg.LinAlgError):
                 trends.append(0)
 
         # Find points where trend changes significantly

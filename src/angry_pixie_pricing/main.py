@@ -169,8 +169,17 @@ def chart(
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         ctx.exit(1)
-    except Exception as e:
-        click.echo(f"Unexpected error: {e}", err=True)
+    except OSError as e:
+        click.echo(f"File I/O error: {e}", err=True)
+        ctx.exit(1)
+    except (ConnectionError, TimeoutError) as e:
+        click.echo(f"Network error while fetching data: {e}", err=True)
+        ctx.exit(1)
+    except pd.errors.EmptyDataError as e:
+        click.echo(f"No data available for the specified period: {e}", err=True)
+        ctx.exit(1)
+    except KeyError as e:
+        click.echo(f"Data format error - missing expected field: {e}", err=True)
         ctx.exit(1)
 
 
@@ -332,7 +341,8 @@ def calculate(
             elif total_kwh and days:
                 daily_consumption = total_kwh / days
                 click.echo(
-                    f"Calculated daily consumption: {total_kwh:.1f} kWh ÷ {days} days = {daily_consumption:.1f} kWh/day",
+                    f"Calculated daily consumption: {total_kwh:.1f} kWh ÷ {days} days = "
+                    f"{daily_consumption:.1f} kWh/day",
                 )
             elif total_kwh:
                 # Assume total_kwh is daily if no days specified
@@ -494,7 +504,7 @@ def calculate(
                 region,
                 handling_fee,
             )
-        except Exception as e:
+        except (KeyError, ValueError, pd.errors.EmptyDataError) as e:
             # Fallback to simple display
             click.echo(f"Monthly aggregation failed: {e}")
             click.echo("\n=== Energy Costs ===")
@@ -530,8 +540,20 @@ def calculate(
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         ctx.exit(1)
-    except Exception as e:
-        click.echo(f"Unexpected error: {e}", err=True)
+    except (OSError, FileNotFoundError) as e:
+        click.echo(f"File error: {e}", err=True)
+        ctx.exit(1)
+    except ImportError as e:
+        click.echo(f"Missing dependency: {e}", err=True)
+        ctx.exit(1)
+    except (ConnectionError, TimeoutError) as e:
+        click.echo(f"Network error while fetching data: {e}", err=True)
+        ctx.exit(1)
+    except pd.errors.ParserError as e:
+        click.echo(f"Data parsing error: {e}", err=True)
+        ctx.exit(1)
+    except KeyError as e:
+        click.echo(f"Data format error - missing expected field: {e}", err=True)
         ctx.exit(1)
 
 
@@ -721,8 +743,10 @@ def _save_profile_png(load_profile, filename):
 
     except ImportError:
         click.echo("Warning: matplotlib not available for PNG charts")
-    except Exception as e:
-        click.echo(f"Warning: Could not save PNG chart: {e}")
+    except (OSError, PermissionError) as e:
+        click.echo(f"Warning: Could not save PNG chart - file error: {e}")
+    except ValueError as e:
+        click.echo(f"Warning: Could not save PNG chart - invalid data: {e}")
 
 
 def _display_monthly_results(
@@ -965,8 +989,12 @@ def _save_cost_chart(
 
     except ImportError:
         click.echo("Warning: matplotlib not available for cost charts")
-    except Exception as e:
-        click.echo(f"Warning: Could not save cost chart: {e}")
+    except (OSError, PermissionError) as e:
+        click.echo(f"Warning: Could not save cost chart - file error: {e}")
+    except ValueError as e:
+        click.echo(f"Warning: Could not save cost chart - invalid data: {e}")
+    except KeyError as e:
+        click.echo(f"Warning: Could not save cost chart - missing data field: {e}")
 
 
 @cli.command()
@@ -1154,8 +1182,17 @@ def duck_factor(
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         ctx.exit(1)
-    except Exception as e:
-        click.echo(f"Unexpected error: {e}", err=True)
+    except OSError as e:
+        click.echo(f"File I/O error: {e}", err=True)
+        ctx.exit(1)
+    except (ConnectionError, TimeoutError) as e:
+        click.echo(f"Network error while fetching data: {e}", err=True)
+        ctx.exit(1)
+    except pd.errors.EmptyDataError as e:
+        click.echo(f"No data available for the specified period: {e}", err=True)
+        ctx.exit(1)
+    except KeyError as e:
+        click.echo(f"Data format error - missing expected field: {e}", err=True)
         ctx.exit(1)
 
 
@@ -1396,8 +1433,17 @@ def negative_pricing(
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         ctx.exit(1)
-    except Exception as e:
-        click.echo(f"Unexpected error: {e}", err=True)
+    except OSError as e:
+        click.echo(f"File I/O error: {e}", err=True)
+        ctx.exit(1)
+    except (ConnectionError, TimeoutError) as e:
+        click.echo(f"Network error while fetching data: {e}", err=True)
+        ctx.exit(1)
+    except pd.errors.EmptyDataError as e:
+        click.echo(f"No data available for the specified period: {e}", err=True)
+        ctx.exit(1)
+    except KeyError as e:
+        click.echo(f"Data format error - missing expected field: {e}", err=True)
         ctx.exit(1)
 
 

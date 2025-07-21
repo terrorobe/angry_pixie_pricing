@@ -193,7 +193,7 @@ def _test_date_parsing():
                 f"Input: start='{start}', end='{end}' -> "
                 f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')} ({result})",
             )
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             print(f"Input: start='{start}', end='{end}' -> ERROR: {e}")
 
 

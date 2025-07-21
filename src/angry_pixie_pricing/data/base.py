@@ -184,7 +184,7 @@ class PriceDataSource(ABC):
             try:
                 # Read CSV with gzip compression
                 return pd.read_csv(cache_file, compression="gzip", parse_dates=["timestamp"])
-            except Exception:
+            except (pd.errors.ParserError, OSError, ValueError):
                 # If cache is corrupted, remove it
                 cache_file.unlink(missing_ok=True)
 

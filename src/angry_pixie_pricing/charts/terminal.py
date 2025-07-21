@@ -12,7 +12,7 @@ from angry_pixie_pricing.analysis.negative_pricing import NegativePricingAnalyze
 # Try to import matplotlib for PNG export, fall back gracefully
 try:
     import matplotlib.dates as mdates
-    import matplotlib.pyplot as mpl_plt
+    import matplotlib.pyplot as plt
 
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
@@ -76,7 +76,7 @@ def create_png_price_chart(
         return
 
     # Create figure and axis
-    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    fig, ax = plt.subplots(figsize=(width, height))
 
     # Plot the data
     ax.plot(df["timestamp"], df["price"], marker="o", markersize=2, linewidth=1.5, color="#1f77b4")
@@ -95,15 +95,15 @@ def create_png_price_chart(
     # Format x-axis for better date display
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
     ax.xaxis.set_major_locator(mdates.HourLocator(interval=max(1, len(df) // 10)))
-    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
     # Add grid
     ax.grid(True, alpha=0.3)
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Chart saved to: {output_path}")
 
@@ -141,7 +141,7 @@ def create_png_hourly_analysis_chart(
         return
 
     # Create figure and axis
-    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    fig, ax = plt.subplots(figsize=(width, height))
 
     workday_stats = results["workday"]
     nonworkday_stats = results["non_workday"]
@@ -202,9 +202,9 @@ def create_png_hourly_analysis_chart(
     ax.legend(fontsize=11)
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Duck curve chart saved to: {output_path}")
 
@@ -245,7 +245,7 @@ def create_png_hourly_workday_chart(
     unit = df["unit"].iloc[0] if not df.empty else "EUR/MWh"
 
     # Create figure and axis
-    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    fig, ax = plt.subplots(figsize=(width, height))
 
     hours = list(range(24))
     prices = [
@@ -278,9 +278,9 @@ def create_png_hourly_workday_chart(
     ax.grid(True, alpha=0.3)
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Workday duck curve chart saved to: {output_path}")
 
@@ -735,7 +735,7 @@ def create_png_duck_factor_chart(
         return
 
     # Create figure and axis
-    fig, ax = mpl_plt.subplots(figsize=(width, height))
+    fig, ax = plt.subplots(figsize=(width, height))
 
     # Prepare data
     dates = pd.to_datetime(duck_factors_df["date"])
@@ -752,7 +752,7 @@ def create_png_duck_factor_chart(
             trend_line = np.polyval(trend_coef, x_numeric)
             ax.plot(dates, trend_line, "--", color="#2E86AB", linewidth=2, alpha=0.7, label="Trend")
             ax.legend(loc="upper right")
-        except Exception:
+        except (ValueError, np.linalg.LinAlgError):
             pass
 
     # Set title and labels
@@ -773,7 +773,7 @@ def create_png_duck_factor_chart(
     ax.xaxis.set_minor_locator(mdates.WeekdayLocator())
 
     # Rotate x-axis labels for better readability
-    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
 
     # Add grid
     ax.grid(True, alpha=0.3)
@@ -782,9 +782,9 @@ def create_png_duck_factor_chart(
     ax.set_ylim(0, 1)
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Duck factor chart saved to: {output_path}")
 
@@ -813,7 +813,7 @@ def create_png_seasonal_duck_chart(
         return
 
     # Create subplots for different seasonal views
-    fig, ((ax1, ax2), (ax3, ax4)) = mpl_plt.subplots(2, 2, figsize=(width, height))
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(width, height))
 
     seasonal_df = seasonal_data["seasonal_patterns"]
     monthly_df = seasonal_data.get("monthly_patterns", pd.DataFrame())
@@ -892,7 +892,7 @@ def create_png_seasonal_duck_chart(
         angles += angles[:1]
         values += values[:1]
 
-        ax4 = mpl_plt.subplot(2, 2, 4, projection="polar")
+        ax4 = plt.subplot(2, 2, 4, projection="polar")
         ax4.plot(angles, values, "o-", linewidth=2, color="#2A9D8F")
         ax4.fill(angles, values, alpha=0.25, color="#2A9D8F")
         ax4.set_xticks(angles[:-1])
@@ -905,9 +905,9 @@ def create_png_seasonal_duck_chart(
     fig.suptitle(f"Seasonal Duck Factor Analysis - {country_name}", fontsize=16, fontweight="bold")
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Seasonal duck factor chart saved to: {output_path}")
 
@@ -1224,7 +1224,7 @@ def create_png_negative_pricing_chart(
     seasonal_data = analyzer.analyze_seasonal_patterns(df)
 
     # Create subplots
-    fig, ((ax1, ax2), (ax3, ax4)) = mpl_plt.subplots(2, 2, figsize=(width, height))
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(width, height))
 
     # 1. Hourly patterns (top-left)
     if metrics.hourly_breakdown:
@@ -1323,9 +1323,9 @@ def create_png_negative_pricing_chart(
     )
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Negative pricing analysis chart saved to: {output_path}")
 
@@ -1388,7 +1388,7 @@ def create_png_negative_pricing_timechart(
         return
 
     # Create figure
-    fig, ax = mpl_plt.subplots(1, 1, figsize=(width, height))
+    fig, ax = plt.subplots(1, 1, figsize=(width, height))
 
     # Plot data
     if has_severity and "severe_hours" in aggregated_data.columns:
@@ -1532,7 +1532,7 @@ def create_png_negative_pricing_timechart(
             else:
                 ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
 
-    mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
     # Add grid and legend
     ax.grid(True, alpha=0.3)
@@ -1581,9 +1581,9 @@ def create_png_negative_pricing_timechart(
     )
 
     # Adjust layout and save
-    mpl_plt.tight_layout()
-    mpl_plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    mpl_plt.close(fig)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
 
     print(f"Negative pricing timechart saved to: {output_path}")
 
@@ -1610,5 +1610,5 @@ def _calculate_simple_trend(values: list) -> str:
         if slope < -0.005:
             return "Moderate downward"
         return "Slight downward"
-    except Exception:
+    except (ValueError, np.linalg.LinAlgError, IndexError):
         return "Unable to calculate"
