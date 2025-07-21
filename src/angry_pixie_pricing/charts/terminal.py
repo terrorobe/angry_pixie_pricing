@@ -1,6 +1,6 @@
 """Terminal-based charting using plotext."""
 
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
@@ -13,10 +13,13 @@ from angry_pixie_pricing.analysis.negative_pricing import NegativePricingAnalyze
 try:
     import matplotlib.dates as mdates
     import matplotlib.pyplot as mpl_plt
+    from matplotlib.ticker import Locator, Formatter
 
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
+    mdates = None  # type: ignore
+    mpl_plt = None  # type: ignore
 
 
 def _get_country_name(region_code: str) -> str:
@@ -93,8 +96,8 @@ def create_png_price_chart(
     ax.set_ylabel(f"Price ({df['unit'].iloc[0] if not df.empty else 'EUR/MWh'})", fontsize=12)
 
     # Format x-axis for better date display
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-    ax.xaxis.set_major_locator(mdates.HourLocator(interval=max(1, len(df) // 10)))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # type: ignore[no-untyped-call]
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=max(1, len(df) // 10)))  # type: ignore[no-untyped-call]
     mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
     # Add grid
@@ -768,9 +771,9 @@ def create_png_duck_factor_chart(
     ax.set_ylabel("Duck Factor (0-1)", fontsize=12)
 
     # Format x-axis
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=max(1, len(dates) // 240)))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    ax.xaxis.set_minor_locator(mdates.WeekdayLocator())
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=max(1, len(dates) // 240)))  # type: ignore[no-untyped-call]
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))  # type: ignore[no-untyped-call]
+    ax.xaxis.set_minor_locator(mdates.WeekdayLocator())  # type: ignore[no-untyped-call]
 
     # Rotate x-axis labels for better readability
     mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
@@ -1488,28 +1491,28 @@ def create_png_negative_pricing_timechart(
     num_periods = len(aggregated_data)
 
     if aggregation_level == "daily":
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))  # type: ignore[no-untyped-call]
         # Auto-adjust x-axis labels based on date range
         if num_periods > 365:
-            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # type: ignore[no-untyped-call]
         elif num_periods > 90:
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_major_locator(mdates.MonthLocator())  # type: ignore[no-untyped-call]
         elif num_periods > 30:
-            ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator())  # type: ignore[no-untyped-call]
         else:
-            ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, num_periods // 10)))
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, num_periods // 10)))  # type: ignore[no-untyped-call]
     elif aggregation_level == "weekly":
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))  # type: ignore[no-untyped-call]
         if num_periods > 52:
-            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # type: ignore[no-untyped-call]
         else:
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_major_locator(mdates.MonthLocator())  # type: ignore[no-untyped-call]
     elif aggregation_level == "monthly":
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))  # type: ignore[no-untyped-call]
         if num_periods > 24:
-            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))  # type: ignore[no-untyped-call]
         else:
-            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # type: ignore[no-untyped-call]
     else:  # solar-quarters
         # For solar quarters, use custom quarter names if available
         if "quarter_name" in aggregated_data.columns:
@@ -1526,11 +1529,11 @@ def create_png_negative_pricing_timechart(
             ax.set_xticklabels(tick_labels, fontsize=10)
         else:
             # Fallback to quarter-like formatting
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-Q%q"))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-Q%q"))  # type: ignore[no-untyped-call]
             if num_periods > 8:
-                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
+                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=6))  # type: ignore[no-untyped-call]
             else:
-                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))  # type: ignore[no-untyped-call]
 
     mpl_plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
@@ -1588,7 +1591,7 @@ def create_png_negative_pricing_timechart(
     print(f"Negative pricing timechart saved to: {output_path}")
 
 
-def _calculate_simple_trend(values: list) -> str:
+def _calculate_simple_trend(values: list[float]) -> str:
     """Calculate a simple trend description for a list of values."""
     if len(values) < 3:
         return "Insufficient data"

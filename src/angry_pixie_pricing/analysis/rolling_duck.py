@@ -5,6 +5,7 @@ to detect trends in renewable energy impact on electricity pricing.
 """
 
 from datetime import timedelta
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -103,7 +104,7 @@ class RollingDuckAnalyzer:
 
         return results
 
-    def detect_seasonal_patterns(self, duck_factors_df: pd.DataFrame) -> dict[str, any]:
+    def detect_seasonal_patterns(self, duck_factors_df: pd.DataFrame) -> dict[str, Any]:
         """
         Detect seasonal patterns in duck factor time series.
 
@@ -159,7 +160,7 @@ class RollingDuckAnalyzer:
 
     def detect_trends(
         self, duck_factors_df: pd.DataFrame, min_data_points: int = 20,
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Detect long-term trends in duck factor evolution.
 
@@ -226,7 +227,7 @@ class RollingDuckAnalyzer:
             "trend_classification": self._classify_trend(trend_slope, r_squared),
         }
 
-    def year_over_year_comparison(self, duck_factors_df: pd.DataFrame) -> dict[str, any]:
+    def year_over_year_comparison(self, duck_factors_df: pd.DataFrame) -> dict[str, Any]:
         """
         Compare duck factors year-over-year to identify evolution patterns.
 
@@ -295,7 +296,7 @@ class RollingDuckAnalyzer:
 
     def _find_inflection_points(
         self, df: pd.DataFrame, sensitivity: float = 0.1,
-    ) -> list[dict[str, any]]:
+    ) -> list[dict[str, Any]]:
         """Find significant changes in duck factor trends."""
         if len(df) < 10:
             return []
@@ -351,7 +352,7 @@ class RollingDuckAnalyzer:
 
 def analyze_rolling_duck_patterns(
     df: pd.DataFrame, region: str, window_days: int = 30, step_days: int = 7,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """
     Convenience function for comprehensive rolling duck analysis.
 

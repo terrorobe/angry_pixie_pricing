@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Union
 
 import click
 import numpy as np
@@ -46,7 +47,7 @@ from .utils.filename_generator import (
 @click.option("--data-source", default="default", help="Data source to use (energy-charts)")
 @click.option("--cache-dir", help="Cache directory for storing fetched data")
 @click.pass_context
-def cli(ctx, data_source: str, cache_dir: str | None):
+def cli(ctx: click.Context, data_source: str, cache_dir: str | None) -> None:
     """Angry Pixie Pricing - European Electricity Price Analysis Tool."""
     # Store common options in context
     ctx.ensure_object(dict)
@@ -59,7 +60,7 @@ def cli(ctx, data_source: str, cache_dir: str | None):
 @add_chart_options
 @click.pass_context
 def chart(
-    ctx,
+    ctx: click.Context,
     region: str,
     start_date: str,
     end_date: str | None,
@@ -69,7 +70,7 @@ def chart(
     chart_type: str,
     width: int | None,
     height: int | None,
-):
+) -> None:
     """Generate hourly electricity price charts for a region and time span."""
     try:
         # Parse dates with flexible format support
@@ -103,23 +104,26 @@ def chart(
                 output = generate_price_chart_filename(
                     region, start_date_str, end_date_str, chart_type,
                 )
-            elif not output.lower().endswith(".png"):
+            elif output is not None and not output.lower().endswith(".png"):
                 # Add .png extension if not present
                 output += ".png"
 
             try:
                 if chart_type == "line":
-                    create_png_price_chart(
-                        df, region, output, width=width or 12, height=height or 6,
-                    )
+                    if output is not None:
+                        create_png_price_chart(
+                            df, region, output, width=width or 12, height=height or 6,
+                        )
                 elif chart_type == "hourly":
-                    create_png_hourly_analysis_chart(
-                        df, region, output, width=width or 12, height=height or 6,
-                    )
+                    if output is not None:
+                        create_png_hourly_analysis_chart(
+                            df, region, output, width=width or 12, height=height or 6,
+                        )
                 elif chart_type == "hourly-workday":
-                    create_png_hourly_workday_chart(
-                        df, region, output, width=width or 12, height=height or 6,
-                    )
+                    if output is not None:
+                        create_png_hourly_workday_chart(
+                            df, region, output, width=width or 12, height=height or 6,
+                        )
                 elif chart_type == "all":
                     # Create multiple PNG files with smart names
                     line_output = generate_price_chart_filename(
@@ -260,7 +264,7 @@ def chart(
 )
 @click.pass_context
 def calculate(
-    ctx,
+    ctx: click.Context,
     usage_data: str | None,
     billing_data: str | None,
     peak_kw: float | None,
@@ -287,7 +291,7 @@ def calculate(
     cost_chart: str | None,
     handling_fee: float,
     profile_only: bool,
-):
+) -> None:
     """Calculate electricity costs using smart meter data or billing reconstruction."""
     try:
         from .analysis.cost_calculator import CostCalculator
@@ -383,7 +387,7 @@ def calculate(
                     "common": common_weight,
                 }
 
-                profile_template = KidsHotelProfile(
+                profile_template: Any = KidsHotelProfile(
                     occupancy_rate=occupancy_rate, facility_weights=facility_weights,
                 )
 
@@ -425,7 +429,7 @@ def calculate(
                     )
 
             # Create calibrated profile
-            load_profile = CalibratedProfile(
+            calibrated_profile: Any = CalibratedProfile(
                 calculation_start_date=start_dt,
                 calculation_end_date=end_dt,
                 daily_kwh=daily_consumption,
@@ -433,9 +437,10 @@ def calculate(
                 profile_template=profile_template,
                 day_night_split=day_night_split,
             )
+            load_profile = calibrated_profile
 
             # Show calibration info
-            calibration = load_profile.get_calibration_info()
+            calibration = calibrated_profile.get_calibration_info()
             click.echo(f"Model calibrated: {calibration['template_used']}")
             if "day_night_ratio" in calibration:
                 click.echo(f"Day/night ratio: {calibration['day_night_ratio']}")
@@ -557,7 +562,7 @@ def calculate(
         ctx.exit(1)
 
 
-def _display_load_profile(load_profile, show_terminal: bool, save_png: str | None):
+def _display_load_profile(load_profile: Any, show_terminal: bool, save_png: str | None) -> None:
     """Display load profile visualization."""
     import plotext as plt
 
@@ -581,12 +586,12 @@ def _display_load_profile(load_profile, show_terminal: bool, save_png: str | Non
         hourly_df = display_df.resample("h").mean()
 
         # Prepare data for plotext
-        hours = list(range(len(hourly_df)))
-        power_values = hourly_df["power_kw"].tolist()
+        hour_indices: list[int] = list(range(len(hourly_df)))
+        power_values: list[float] = hourly_df["power_kw"].tolist()
 
         # Create terminal chart
         plt.clear_data()
-        plt.plot(hours, power_values, marker="hd")
+        plt.plot(hour_indices, power_values, marker="hd")
 
         plt.title("Hotel Load Profile")
         plt.xlabel("Hour of Day")
@@ -615,7 +620,7 @@ def _display_load_profile(load_profile, show_terminal: bool, save_png: str | Non
         click.echo(f"\nLoad profile chart saved to {save_png}")
 
 
-def _show_facility_breakdown(template, peak_power):
+def _show_facility_breakdown(template: Any, peak_power: float) -> None:
     """Show facility load breakdown for kids hotel."""
     click.echo("\n=== Facility Load Breakdown (Peak Hour Estimates) ===")
 
@@ -659,7 +664,7 @@ def _show_facility_breakdown(template, peak_power):
         )
 
 
-def _save_profile_png(load_profile, filename):
+def _save_profile_png(load_profile: Any, filename: str) -> None:
     """Save load profile chart as PNG."""
     try:
         import matplotlib.dates as mdates
@@ -730,11 +735,11 @@ def _save_profile_png(load_profile, filename):
 
         # Format x-axis
         if len(df) <= 96:  # One day or less
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-            ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))  # type: ignore[no-untyped-call]
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))  # type: ignore[no-untyped-call]
         else:
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
-            ax.xaxis.set_major_locator(mdates.DayLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))  # type: ignore[no-untyped-call]
+            ax.xaxis.set_major_locator(mdates.DayLocator())  # type: ignore[no-untyped-call]
 
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -750,19 +755,19 @@ def _save_profile_png(load_profile, filename):
 
 
 def _display_monthly_results(
-    detailed_df,
-    results,
-    start_dt,
-    end_dt,
-    cost_chart=None,
-    peak_kw=None,
-    daily_kwh=None,
-    day_kwh=None,
-    night_kwh=None,
-    occupancy_rate=None,
-    region=None,
-    handling_fee=0.0,
-):
+    detailed_df: pd.DataFrame,
+    results: dict[str, Any],
+    start_dt: datetime,
+    end_dt: datetime,
+    cost_chart: str | None = None,
+    peak_kw: float | None = None,
+    daily_kwh: float | None = None,
+    day_kwh: float | None = None,
+    night_kwh: float | None = None,
+    occupancy_rate: float | None = None,
+    region: str | None = None,
+    handling_fee: float = 0.0,
+) -> None:
     """Display cost results with monthly aggregation and optional cost chart."""
 
     # Add month column for grouping
@@ -878,18 +883,18 @@ def _display_monthly_results(
 
 
 def _save_cost_chart(
-    monthly_summary,
-    filename,
-    start_dt,
-    end_dt,
-    peak_kw=None,
-    daily_kwh=None,
-    day_kwh=None,
-    night_kwh=None,
-    occupancy_rate=None,
-    region=None,
-    handling_fee=0.0,
-):
+    monthly_summary: pd.DataFrame,
+    filename: str,
+    start_dt: datetime,
+    end_dt: datetime,
+    peak_kw: float | None = None,
+    daily_kwh: float | None = None,
+    day_kwh: float | None = None,
+    night_kwh: float | None = None,
+    occupancy_rate: float | None = None,
+    region: str | None = None,
+    handling_fee: float = 0.0,
+) -> None:
     """Save monthly cost breakdown chart as PNG."""
     try:
         import matplotlib.dates as mdates
@@ -948,8 +953,8 @@ def _save_cost_chart(
         ax.grid(True, alpha=0.3)
 
         # Format x-axis
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))  # type: ignore[no-untyped-call]
+        ax.xaxis.set_major_locator(mdates.MonthLocator())  # type: ignore[no-untyped-call]
         plt.xticks(rotation=45)
 
         # Add simulation parameters as text box
@@ -998,7 +1003,7 @@ def _save_cost_chart(
 
 
 @cli.command()
-def sources():
+def sources() -> None:
     """List available data sources."""
     sources = DataSourceFactory.list_available_sources()
     click.echo("Available data sources:")
@@ -1011,7 +1016,7 @@ def sources():
 @cli.command()
 @click.option("--region", help="Clear cache for specific region only")
 @click.pass_context
-def clear_cache(ctx, region: str | None):
+def clear_cache(ctx: click.Context, region: str | None) -> None:
     """Clear cached price data."""
     data_source = DataSourceFactory.create_data_source(ctx.obj["data_source"], ctx.obj["cache_dir"])
 
@@ -1028,7 +1033,7 @@ def clear_cache(ctx, region: str | None):
 @add_duck_factor_options
 @click.pass_context
 def duck_factor(
-    ctx,
+    ctx: click.Context,
     region: str,
     start_date: str,
     end_date: str | None,
@@ -1040,7 +1045,7 @@ def duck_factor(
     no_cache: bool,
     width: int | None,
     height: int | None,
-):
+) -> None:
     """Analyze duck curve evolution over time with rolling window analysis."""
     try:
         # Parse dates with flexible format support
@@ -1095,35 +1100,38 @@ def duck_factor(
                         output = generate_duck_factor_filename(
                             region, start_date_str, end_date_str, window_days, "timeseries",
                         )
-                    elif not output.lower().endswith(".png"):
+                    elif output is not None and not output.lower().endswith(".png"):
                         output += ".png"
-                    create_png_duck_factor_chart(
-                        duck_factors,
-                        region,
-                        output,
-                        window_days,
-                        width=width or 12,
-                        height=height or 6,
-                    )
+                    if output is not None:
+                        create_png_duck_factor_chart(
+                            duck_factors,
+                            region,
+                            output,
+                            window_days,
+                            width=width or 12,
+                            height=height or 6,
+                        )
                 elif chart_type == "seasonal":
                     if png:
                         output = generate_duck_factor_filename(
                             region, start_date_str, end_date_str, window_days, "seasonal",
                         )
-                    elif not output.lower().endswith(".png"):
+                    elif output is not None and not output.lower().endswith(".png"):
                         output += ".png"
-                    create_png_seasonal_duck_chart(
-                        seasonal_data, region, output, width=width or 12, height=height or 8,
-                    )
+                    if output is not None:
+                        create_png_seasonal_duck_chart(
+                            seasonal_data, region, output, width=width or 12, height=height or 8,
+                        )
                 elif chart_type == "multi-window":
                     # Create multiple window analysis with smart filenames
                     from .analysis.rolling_duck import RollingDuckAnalyzer
 
                     analyzer = RollingDuckAnalyzer(region)
-                    multi_results = analyzer.multi_window_analysis(df, [7, 30, 90], step_days)
+                    windows = [7, 30, 90]
+                    multi_results = analyzer.multi_window_analysis(df, windows, step_days)
 
                     window_filenames = get_multi_window_filenames(
-                        region, start_date_str, end_date_str, [7, 30, 90],
+                        region, start_date_str, end_date_str, [f"{w}d" for w in windows],
                     )
 
                     for window_key, window_df in multi_results.items():
@@ -1212,7 +1220,7 @@ def _parse_time_period(period_str: str) -> int:
     return int(period_str)
 
 
-def _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data):
+def _display_duck_factor_summary(duck_factors: pd.DataFrame, trends: dict[str, Any], seasonal_data: dict[str, Any], yoy_data: dict[str, Any]) -> None:
     """Display a summary of duck factor analysis results."""
     click.echo("\n" + "=" * 60)
     click.echo("DUCK FACTOR ANALYSIS SUMMARY")
@@ -1251,7 +1259,7 @@ def _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data):
     click.echo("=" * 60)
 
 
-def _display_seasonal_analysis(seasonal_data, region):
+def _display_seasonal_analysis(seasonal_data: dict[str, Any], region: str) -> None:
     """Display seasonal analysis in terminal format."""
     if not seasonal_data or seasonal_data.get("seasonal_patterns", pd.DataFrame()).empty:
         click.echo("No seasonal data available")
@@ -1273,7 +1281,7 @@ def _display_seasonal_analysis(seasonal_data, region):
         click.echo(f"Seasonal Range: {seasonal_data.get('seasonal_range', 0):.3f}")
 
 
-def _display_multi_window_analysis(df, region, step_days):
+def _display_multi_window_analysis(df: pd.DataFrame, region: str, step_days: int) -> None:
     """Display multi-window analysis summary."""
     from .analysis.rolling_duck import RollingDuckAnalyzer
 
@@ -1296,7 +1304,7 @@ def _display_multi_window_analysis(df, region, step_days):
 @add_negative_pricing_options
 @click.pass_context
 def negative_pricing(
-    ctx,
+    ctx: click.Context,
     region: str,
     start_date: str,
     end_date: str | None,
@@ -1311,7 +1319,7 @@ def negative_pricing(
     no_cache: bool,
     width: int | None,
     height: int | None,
-):
+) -> None:
     """Analyze negative and near-zero electricity pricing patterns with solar potential estimates."""
     try:
         # Parse dates with flexible format support
@@ -1349,23 +1357,24 @@ def negative_pricing(
                         f"images/negative-pricing-timechart-{aggregation_level}_{region.lower()}_"
                         f"{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
                     )
-                elif not output.lower().endswith(".png"):
+                elif output is not None and not output.lower().endswith(".png"):
                     # Add .png extension if not present
                     output += ".png"
 
                 try:
-                    create_png_negative_pricing_timechart(
-                        df,
-                        region,
-                        output,
-                        width=width or 12,
-                        height=height or 6,
-                        near_zero_threshold=threshold,
-                        severe_threshold=severe_threshold,
-                        extreme_threshold=extreme_threshold,
-                        cheap_threshold=cheap_threshold,
-                        aggregation_level=aggregation_level,
-                    )
+                    if output is not None:
+                        create_png_negative_pricing_timechart(
+                            df,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 6,
+                            near_zero_threshold=threshold,
+                            severe_threshold=severe_threshold,
+                            extreme_threshold=extreme_threshold,
+                            cheap_threshold=cheap_threshold,
+                            aggregation_level=aggregation_level,
+                        )
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
@@ -1407,19 +1416,20 @@ def negative_pricing(
                         f"images/negative-pricing_{region.lower()}_"
                         f"{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
                     )
-                elif not output.lower().endswith(".png"):
+                elif output is not None and not output.lower().endswith(".png"):
                     # Add .png extension if not present
                     output += ".png"
 
                 try:
-                    create_png_negative_pricing_chart(
-                        df,
-                        region,
-                        output,
-                        width=width or 12,
-                        height=height or 8,
-                        near_zero_threshold=threshold,
-                    )
+                    if output is not None:
+                        create_png_negative_pricing_chart(
+                            df,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 8,
+                            near_zero_threshold=threshold,
+                        )
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
@@ -1447,7 +1457,7 @@ def negative_pricing(
         ctx.exit(1)
 
 
-def _display_negative_pricing_summary(metrics, seasonal_data, region):
+def _display_negative_pricing_summary(metrics: Any, seasonal_data: dict[str, Any], region: str) -> None:
     """Display comprehensive negative pricing analysis summary."""
     click.echo("\n" + "=" * 70)
     click.echo("NEGATIVE PRICING ANALYSIS SUMMARY")
@@ -1534,14 +1544,14 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         winter_months = [12, 1, 2]  # Dec, Jan, Feb
 
         summer_values = [
-            seasonal_data[m]["progress_metrics"]["current_hours_per_day"]
+            seasonal_data[str(m)]["progress_metrics"]["current_hours_per_day"]
             for m in summer_months
-            if m in seasonal_data and "error" not in seasonal_data[m]["progress_metrics"]
+            if str(m) in seasonal_data and "error" not in seasonal_data[str(m)]["progress_metrics"]
         ]
         winter_values = [
-            seasonal_data[m]["progress_metrics"]["current_hours_per_day"]
+            seasonal_data[str(m)]["progress_metrics"]["current_hours_per_day"]
             for m in winter_months
-            if m in seasonal_data and "error" not in seasonal_data[m]["progress_metrics"]
+            if str(m) in seasonal_data and "error" not in seasonal_data[str(m)]["progress_metrics"]
         ]
 
         summer_avg = np.mean(summer_values) if summer_values else np.nan

@@ -19,8 +19,9 @@ class PriceDataSource(ABC):
             cache_dir: Directory for caching data. Defaults to ./data/cache/
         """
         if cache_dir is None:
-            cache_dir = Path.cwd() / "data" / "cache"
-        self.cache_dir = Path(cache_dir)
+            self.cache_dir = Path.cwd() / "data" / "cache"
+        else:
+            self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get_spot_prices(
@@ -192,7 +193,7 @@ class PriceDataSource(ABC):
 
     def _cache_period_data(
         self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame,
-    ):
+    ) -> None:
         """Cache the data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
         cache_file = self.cache_dir / cache_filename
@@ -205,7 +206,7 @@ class PriceDataSource(ABC):
                 cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S",
             )
 
-    def clear_cache(self, region: str | None = None):
+    def clear_cache(self, region: str | None = None) -> None:
         """
         Clear cached data.
 

@@ -206,6 +206,9 @@ class CostCalculator:
         if self._calculation_results is None:
             self.calculate()
 
+        if self._calculation_results is None:
+            raise ValueError("Calculation failed")
+
         total_kwh = self._calculation_results["total_consumption_kwh"]
 
         # Calculate flat rate costs

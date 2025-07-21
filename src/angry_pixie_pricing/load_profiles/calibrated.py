@@ -20,7 +20,7 @@ class CalibratedProfile(LoadProfile):
         daily_kwh: float,
         peak_kw: float,
         profile_template: ProfileTemplate,
-        day_night_split: tuple | None = None,
+        day_night_split: tuple[float, float] | None = None,
         custom_constraints: dict[str, Any] | None = None,
     ):
         """Initialize calibrated profile.
@@ -73,6 +73,8 @@ class CalibratedProfile(LoadProfile):
 
     def _apply_day_night_split(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply day/night split to template profile."""
+        if self.day_night_split is None:
+            raise ValueError("day_night_split must be set to use this method")
         daily_day_kwh, daily_night_kwh = self.day_night_split
 
         # Define day/night masks

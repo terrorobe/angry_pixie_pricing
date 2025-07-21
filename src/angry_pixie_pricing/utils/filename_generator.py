@@ -140,8 +140,8 @@ def generate_price_chart_filename(
 
 
 def get_multi_window_filenames(
-    region: str, start_date: str, end_date: str, windows: list, base_dir: str = "images",
-) -> dict:
+    region: str, start_date: str, end_date: str, windows: list[str], base_dir: str = "images",
+) -> dict[str, str]:
     """
     Generate filenames for multi-window analysis.
 
@@ -157,16 +157,18 @@ def get_multi_window_filenames(
     """
     filenames = {}
 
-    for window_days in windows:
+    for window_str in windows:
+        # Convert window string like "7d" to integer
+        window_days = int(window_str.rstrip('d'))
         filename = generate_duck_factor_filename(
             region=region,
             start_date=start_date,
             end_date=end_date,
             window_days=window_days,
-            chart_subtype=f"{window_days}d-window",
+            chart_subtype=f"{window_str}-window",
             base_dir=base_dir,
         )
-        filenames[f"{window_days}d"] = filename
+        filenames[f"{window_str}"] = filename
 
     return filenames
 

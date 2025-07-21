@@ -5,6 +5,8 @@ like duck curves, which show characteristic dips during midday solar generation
 and peaks during morning/evening demand.
 """
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -87,7 +89,7 @@ class HourlyPriceAnalyzer:
 
         return hourly_stats.fillna(0)
 
-    def detect_duck_curve_features(self, hourly_stats: pd.DataFrame) -> dict[str, float]:
+    def detect_duck_curve_features(self, hourly_stats: pd.DataFrame) -> dict[str, Any]:
         """
         Detect characteristic duck curve features.
 
@@ -149,7 +151,7 @@ class HourlyPriceAnalyzer:
 
     def compare_workday_vs_nonworkday(
         self, analysis_results: dict[str, pd.DataFrame],
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Compare duck curve characteristics between workdays and non-workdays.
 

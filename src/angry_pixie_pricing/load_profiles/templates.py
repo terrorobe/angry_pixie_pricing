@@ -35,16 +35,16 @@ class ProfileTemplate:
         self._weekend_factor = 0.8
         self._seasonal_factors = {"winter": 1.2, "spring": 0.9, "summer": 0.8, "autumn": 1.0}
 
-    def set_hourly_pattern(self, pattern: dict[int, float]):
+    def set_hourly_pattern(self, pattern: dict[int, float]) -> None:
         """Set hourly load factors (0-23 hours)."""
         self._hourly_factors = pattern
 
-    def set_weekly_pattern(self, weekday: float, weekend: float):
+    def set_weekly_pattern(self, weekday: float, weekend: float) -> None:
         """Set weekday/weekend factors."""
         self._weekday_factor = weekday
         self._weekend_factor = weekend
 
-    def set_seasonal_pattern(self, factors: dict[str, float]):
+    def set_seasonal_pattern(self, factors: dict[str, float]) -> None:
         """Set seasonal adjustment factors."""
         self._seasonal_factors.update(factors)
 
@@ -124,7 +124,7 @@ class ProfileTemplate:
 class ResidentialProfile(ProfileTemplate):
     """Typical residential load profile."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Residential", base_load_factor=0.2)
 
         # Typical residential pattern
@@ -165,7 +165,7 @@ class ResidentialProfile(ProfileTemplate):
 class CommercialProfile(ProfileTemplate):
     """Typical commercial/office load profile."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Commercial", base_load_factor=0.3)
 
         # Typical office pattern
@@ -213,7 +213,7 @@ class CommercialProfile(ProfileTemplate):
 class IndustrialProfile(ProfileTemplate):
     """Typical industrial load profile (single shift)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Industrial", base_load_factor=0.4)
 
         # Single shift pattern

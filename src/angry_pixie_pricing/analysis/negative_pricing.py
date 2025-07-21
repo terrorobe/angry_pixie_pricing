@@ -5,6 +5,7 @@ typically driven by renewable energy oversupply (especially solar PV).
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -199,7 +200,7 @@ class NegativePricingAnalyzer:
             hourly_breakdown=hourly_breakdown,
         )
 
-    def estimate_solar_saturation_potential(self, month: int) -> dict[str, float]:
+    def estimate_solar_saturation_potential(self, month: int) -> dict[str, Any]:
         """
         Estimate the theoretical maximum hours of negative pricing based on solar potential.
 
@@ -258,7 +259,7 @@ class NegativePricingAnalyzer:
 
     def calculate_progress_metrics(
         self, current_metrics: NegativePricingMetrics, month: int,
-    ) -> dict[str, float]:
+    ) -> dict[str, Any]:
         """
         Calculate progress toward maximum renewable saturation.
 
@@ -300,7 +301,7 @@ class NegativePricingAnalyzer:
             else "High",
         }
 
-    def analyze_seasonal_patterns(self, df: pd.DataFrame) -> dict[str, any]:
+    def analyze_seasonal_patterns(self, df: pd.DataFrame) -> dict[int | str, Any]:
         """
         Analyze seasonal patterns in negative pricing across all months.
 
@@ -310,7 +311,7 @@ class NegativePricingAnalyzer:
         Returns:
             Dictionary with seasonal analysis results
         """
-        seasonal_analysis = {}
+        seasonal_analysis: dict[int | str, Any] = {}
 
         # Analyze each month
         for month in range(1, 13):
@@ -542,7 +543,7 @@ def calculate_solar_quarter_hours_timeseries(
         )
 
     # Define solar quarter mapping
-    def get_solar_quarter(month):
+    def get_solar_quarter(month: int) -> tuple[str, int]:
         """Map calendar month to solar quarter."""
         if month in [5, 6, 7]:  # May-Jul
             return ("Peak Sun", 2)  # Q2
@@ -761,7 +762,7 @@ def calculate_aggregated_hours_timeseries(
 
 def analyze_negative_pricing_comprehensive(
     df: pd.DataFrame, region: str, near_zero_threshold: float = 5.0,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """
     Convenience function for comprehensive negative pricing analysis.
 

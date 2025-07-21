@@ -1,10 +1,13 @@
 """Shared CLI option definitions for reuse across commands."""
 
+from __future__ import annotations
+from typing import Any, Callable
+
 import click
 
 
 # Common date options used across multiple commands
-def add_date_options(func):
+def add_date_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add standard date options to a command."""
     func = click.option(
         "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
@@ -14,14 +17,14 @@ def add_date_options(func):
     )(func)
 
 
-def add_region_option(func):
+def add_region_option(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add region option to a command."""
     return click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")(
         func,
     )
 
 
-def add_output_options(func):
+def add_output_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add output-related options to a command."""
     func = click.option(
         "--output", "-o", default=None, help="Output PNG file path (enables PNG mode).",
@@ -37,12 +40,12 @@ def add_output_options(func):
     )
 
 
-def add_cache_option(func):
+def add_cache_option(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add cache option to a command."""
     return click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")(func)
 
 
-def add_standard_options(func):
+def add_standard_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add the most common options (region, dates, output, cache)."""
     func = add_cache_option(func)
     func = add_output_options(func)
@@ -53,7 +56,7 @@ def add_standard_options(func):
 # Specialized option groups for specific commands
 
 
-def add_duck_factor_options(func):
+def add_duck_factor_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add duck factor specific options."""
     func = click.option(
         "--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)",
@@ -70,7 +73,7 @@ def add_duck_factor_options(func):
     )(func)
 
 
-def add_chart_options(func):
+def add_chart_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add chart command specific options."""
     return click.option(
         "--chart-type",
@@ -91,7 +94,7 @@ all: Display line, daily, and summary together
     )(func)
 
 
-def add_negative_pricing_options(func):
+def add_negative_pricing_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add negative pricing specific options."""
     func = click.option("--threshold", default=10.0, help="Near-zero price threshold (EUR/MWh)")(
         func,
@@ -166,13 +169,13 @@ class CommonOptions:
 class CommonParameterGroup(click.Group):
     """Custom Click Group that adds common parameters to all commands."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    def command(self, *args, **kwargs):
+    def command(self, *args: Any, **kwargs: Any) -> Any:
         """Override command decorator to add common options."""
 
-        def decorator(f):
+        def decorator(f: Callable[..., Any]) -> Any:
             # Add common options to every command
             f = add_cache_option(f)
             # Create the command normally

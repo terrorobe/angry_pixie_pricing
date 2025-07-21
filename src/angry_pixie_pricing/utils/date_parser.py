@@ -174,7 +174,7 @@ def _last_day_of_month(dt: datetime) -> int:
 
 
 # Examples and test cases
-def _test_date_parsing():
+def _test_date_parsing() -> None:
     """Test function to demonstrate date parsing functionality."""
     test_cases = [
         ("2024", None, "2024-01-01 to 2024-12-31"),

@@ -41,7 +41,7 @@ class LoadProfile(ABC):
 
     def get_total_consumption(self) -> float:
         """Calculate total energy consumption in kWh."""
-        return self.data["energy_kwh"].sum()
+        return float(self.data["energy_kwh"].sum())
 
     def get_peak_power(self) -> tuple[float, datetime]:
         """Get peak power and when it occurred.

@@ -112,7 +112,7 @@ class SmartMeterProfile(LoadProfile):
 
     @classmethod
     def from_standard_formats(
-        cls, csv_path: Path, format_type: str = "auto", **kwargs,
+        cls, csv_path: Path, format_type: str = "auto", **kwargs: Any,
     ) -> "SmartMeterProfile":
         """Create profile from common smart meter formats.
 
@@ -154,7 +154,7 @@ class SmartMeterProfile(LoadProfile):
         config = format_configs.get(format_type, format_configs["generic"])
         config.update(kwargs)  # Allow overrides
 
-        return cls(csv_path, **config)
+        return cls(csv_path, **config)  # type: ignore[arg-type]
 
     @staticmethod
     def _detect_format(csv_path: Path) -> str:
