@@ -177,10 +177,7 @@ class BillingReconstructedProfile(LoadProfile):
     def _apply_operating_hours(self, df: pd.DataFrame, operating_hours: dict) -> pd.DataFrame:
         """Apply operating hours constraints."""
         for day, hours in operating_hours.items():
-            if isinstance(day, int):  # Weekday number (0=Monday)
-                day_mask = df.index.weekday == day
-            else:  # Day name
-                day_mask = df.index.day_name() == day
+            day_mask = df.index.weekday == day if isinstance(day, int) else df.index.day_name() == day
 
             # Outside operating hours
             before_mask = day_mask & (df.index.hour < hours.get("start", 0))

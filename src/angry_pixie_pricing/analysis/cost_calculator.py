@@ -233,7 +233,7 @@ class CostCalculator:
         }
 
     def optimize_load_shifting(
-        self, shiftable_percentage: float = 0.2, max_shift_hours: int = 4
+        self, shiftable_percentage: float = 0.2, _max_shift_hours: int = 4
     ) -> dict[str, Any]:
         """Calculate potential savings from load shifting.
 

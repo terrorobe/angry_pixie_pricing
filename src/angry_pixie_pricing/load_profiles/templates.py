@@ -54,10 +54,7 @@ class ProfileTemplate:
         hour_factor = self._hourly_factors.get(timestamp.hour, 1.0)
 
         # Weekday/weekend adjustment
-        if timestamp.weekday() < 5:  # Monday = 0, Friday = 4
-            day_factor = self._weekday_factor
-        else:
-            day_factor = self._weekend_factor
+        day_factor = self._weekday_factor if timestamp.weekday() < 5 else self._weekend_factor
 
         # Seasonal adjustment
         month = timestamp.month

@@ -1,6 +1,7 @@
 """Energy-Charts.info data source implementation."""
 
 from datetime import datetime
+from typing import ClassVar
 
 import pandas as pd
 import requests
@@ -14,7 +15,7 @@ class EnergyChartsDataSource(PriceDataSource):
     BASE_URL = "https://api.energy-charts.info"
 
     # Map common country codes to energy-charts bidding zones
-    REGION_MAPPING = {
+    REGION_MAPPING: ClassVar[dict[str, str]] = {
         "DE": "DE-LU",  # Germany-Luxembourg
         "AT": "AT",  # Austria
         "BE": "BE",  # Belgium
@@ -75,9 +76,9 @@ class EnergyChartsDataSource(PriceDataSource):
             return df
 
         except requests.RequestException as e:
-            raise ConnectionError(f"Failed to fetch data from energy-charts.info: {e}")
+            raise ConnectionError(f"Failed to fetch data from energy-charts.info: {e}") from e
         except (KeyError, ValueError) as e:
-            raise ValueError(f"Invalid response from energy-charts.info API: {e}")
+            raise ValueError(f"Invalid response from energy-charts.info API: {e}") from e
 
     def get_supported_regions(self) -> list[str]:
         """

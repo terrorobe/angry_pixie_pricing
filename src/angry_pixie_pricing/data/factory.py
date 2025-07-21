@@ -1,5 +1,7 @@
 """Factory for creating data source instances."""
 
+from typing import ClassVar
+
 from .base import PriceDataSource
 from .energy_charts import EnergyChartsDataSource
 
@@ -7,7 +9,7 @@ from .energy_charts import EnergyChartsDataSource
 class DataSourceFactory:
     """Factory for creating data source instances."""
 
-    AVAILABLE_SOURCES = {
+    AVAILABLE_SOURCES: ClassVar[dict[str, type[PriceDataSource]]] = {
         "energy-charts": EnergyChartsDataSource,
         "default": EnergyChartsDataSource,  # Default source
     }

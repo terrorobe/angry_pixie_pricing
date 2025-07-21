@@ -31,7 +31,7 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
         try:
             return datetime.strptime(date_string, "%Y-%m-%d")
         except ValueError:
-            raise ValueError(f"Invalid date: {date_string}")
+            raise ValueError(f"Invalid date: {date_string}") from None
 
     # YYYY-MM format (month)
     elif re.match(r"^\d{4}-\d{2}$", date_string):
@@ -39,10 +39,7 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
             year, month = map(int, date_string.split("-"))
             if is_end_date:
                 # Last day of the month
-                if month == 12:
-                    next_month_start = datetime(year + 1, 1, 1)
-                else:
-                    next_month_start = datetime(year, month + 1, 1)
+                next_month_start = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
                 # Subtract one day to get last day of current month
                 from datetime import timedelta
 
@@ -51,7 +48,7 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
                 # First day of the month
                 return datetime(year, month, 1)
         except ValueError:
-            raise ValueError(f"Invalid year-month: {date_string}")
+            raise ValueError(f"Invalid year-month: {date_string}") from None
 
     # YYYY format (year)
     elif re.match(r"^\d{4}$", date_string):
@@ -64,7 +61,7 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
                 # First day of the year (January 1)
                 return datetime(year, 1, 1)
         except ValueError:
-            raise ValueError(f"Invalid year: {date_string}")
+            raise ValueError(f"Invalid year: {date_string}") from None
 
     else:
         raise ValueError(
@@ -166,10 +163,7 @@ def format_date_range_description(start_date: datetime, end_date: datetime) -> s
 
 def _last_day_of_month(dt: datetime) -> int:
     """Get the last day number of the month for a given datetime."""
-    if dt.month == 12:
-        next_month = datetime(dt.year + 1, 1, 1)
-    else:
-        next_month = datetime(dt.year, dt.month + 1, 1)
+    next_month = datetime(dt.year + 1, 1, 1) if dt.month == 12 else datetime(dt.year, dt.month + 1, 1)
 
     from datetime import timedelta
 
@@ -194,7 +188,8 @@ def _test_date_parsing():
             start_dt, end_dt = parse_date_range(start, end)
             result = format_date_range_description(start_dt, end_dt)
             print(
-                f"Input: start='{start}', end='{end}' -> {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')} ({result})"
+                f"Input: start='{start}', end='{end}' -> "
+                f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')} ({result})"
             )
         except Exception as e:
             print(f"Input: start='{start}', end='{end}' -> ERROR: {e}")

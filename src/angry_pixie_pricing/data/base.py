@@ -147,7 +147,9 @@ class PriceDataSource(ABC):
             return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m')}.csv.gz"
         else:
             # Day-based or partial month
-            return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.csv.gz"
+            start_str = start_date.strftime('%Y-%m-%d')
+            end_str = end_date.strftime('%Y-%m-%d')
+            return f"{source_name}_{region_normalized}_{start_str}_to_{end_str}.csv.gz"
 
     def _get_cached_data(
         self, region: str, start_date: datetime, end_date: datetime
@@ -198,14 +200,13 @@ class PriceDataSource(ABC):
         cache_filename = self._get_cache_filename(region, start_date, end_date)
         cache_file = self.cache_dir / cache_filename
 
-        try:
+        from contextlib import suppress
+
+        with suppress(Exception):
             # Write CSV with gzip compression
             data.to_csv(
                 cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S"
             )
-        except Exception:
-            # If caching fails, continue without error
-            pass
 
     def clear_cache(self, region: str | None = None):
         """

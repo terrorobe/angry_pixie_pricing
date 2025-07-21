@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 import numpy as np
+import pandas as pd
 
 from .analysis.negative_pricing import analyze_negative_pricing_comprehensive
 from .analysis.rolling_duck import analyze_rolling_duck_patterns
@@ -405,7 +406,8 @@ def calculate(
                 split_total = daily_day_kwh + daily_night_kwh
                 if abs(split_total - daily_consumption) > 0.1:
                     click.echo(
-                        f"Warning: Day/night split ({split_total:.1f} kWh) doesn't match daily total ({daily_consumption:.1f} kWh)"
+                        f"Warning: Day/night split ({split_total:.1f} kWh) doesn't match "
+                        f"daily total ({daily_consumption:.1f} kWh)"
                     )
 
             # Create calibrated profile
@@ -798,7 +800,8 @@ def _display_monthly_results(
                 total_cost = spot_cost + handling_cost
                 total_price = total_cost / consumption if consumption > 0 else 0
                 click.echo(
-                    f"{month_name:9} │ {consumption:6.0f} │   {spot_price:.4f}   │ {handling_fee:.4f} │   {total_price:.4f}   │  {total_cost:6.2f}"
+                    f"{month_name:9} │ {consumption:6.0f} │   {spot_price:.4f}   │ {handling_fee:.4f} │   "
+                    f"{total_price:.4f}   │  {total_cost:6.2f}"
                 )
             else:
                 click.echo(
@@ -862,7 +865,6 @@ def _save_cost_chart(
     try:
         import matplotlib.dates as mdates
         import matplotlib.pyplot as plt
-        import pandas as pd
 
         # Create figure
         fig, ax = plt.subplots(figsize=(12, 8))
@@ -1302,7 +1304,10 @@ def negative_pricing(
                 # PNG output mode
                 if png:
                     # Auto-generate filename when using --png flag
-                    output = f"images/negative-pricing-timechart-{aggregation_level}_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                    output = (
+                        f"images/negative-pricing-timechart-{aggregation_level}_{region.lower()}_"
+                        f"{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                    )
                 elif not output.lower().endswith(".png"):
                     # Add .png extension if not present
                     output += ".png"
@@ -1357,7 +1362,10 @@ def negative_pricing(
                 # PNG output mode
                 if png:
                     # Auto-generate filename when using --png flag
-                    output = f"images/negative-pricing_{region.lower()}_{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                    output = (
+                        f"images/negative-pricing_{region.lower()}_"
+                        f"{start_date_str.replace('-', '')}_{end_date_str.replace('-', '')}.png"
+                    )
                 elif not output.lower().endswith(".png"):
                     # Add .png extension if not present
                     output += ".png"

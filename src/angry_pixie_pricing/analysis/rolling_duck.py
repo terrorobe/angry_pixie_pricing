@@ -172,7 +172,10 @@ class RollingDuckAnalyzer:
         """
         if len(duck_factors_df) < min_data_points:
             return {
-                "error": f"Insufficient data points for trend analysis (need {min_data_points}, got {len(duck_factors_df)})"
+                "error": (
+                    f"Insufficient data points for trend analysis "
+                    f"(need {min_data_points}, got {len(duck_factors_df)})"
+                )
             }
 
         df = duck_factors_df.copy()

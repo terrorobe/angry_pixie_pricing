@@ -166,10 +166,12 @@ class CalibratedProfile(LoadProfile):
         }
 
         # Kids hotel specific: higher summer load (pool, AC)
-        if hasattr(self.profile_template, "facility_weights"):
-            if self.profile_template.facility_weights.get("wellness", 0) > 0.2:
-                # Pool-heavy hotel - summer peak
-                seasonal_factors.update({6: 1.1, 7: 1.2, 8: 1.2, 9: 1.0})
+        if (
+            hasattr(self.profile_template, "facility_weights")
+            and self.profile_template.facility_weights.get("wellness", 0) > 0.2
+        ):
+            # Pool-heavy hotel - summer peak
+            seasonal_factors.update({6: 1.1, 7: 1.2, 8: 1.2, 9: 1.0})
 
         return seasonal_factors.get(month, 1.0)
 
@@ -207,7 +209,10 @@ class CalibratedProfile(LoadProfile):
                 {
                     "daily_day_kwh": daily_day,
                     "daily_night_kwh": daily_night,
-                    "day_night_ratio": f"{daily_day / (daily_day + daily_night) * 100:.1f}% / {daily_night / (daily_day + daily_night) * 100:.1f}%",
+                    "day_night_ratio": (
+                        f"{daily_day / (daily_day + daily_night) * 100:.1f}% / "
+                        f"{daily_night / (daily_day + daily_night) * 100:.1f}%"
+                    ),
                 }
             )
 
