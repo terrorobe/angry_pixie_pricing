@@ -121,16 +121,13 @@ uv run angry-pixie calculate --usage-data meter_data.csv --region DE --start-dat
 # Run tests
 uv run pytest tests/
 
-# Code formatting and linting with ruff
-uv run ruff format src/ tests/
-uv run ruff check src/ tests/ --fix
-
-# Type checking
-uv run mypy src/
-
-# All checks at once
+# Code Quality
+```bash
+# Format and check code (must have zero issues before work is complete)
 uv run ruff format . && uv run ruff check . --fix && uv run mypy src/
 ```
+
+**CRITICAL**: Work is only complete when both ruff and mypy report zero issues. Always run before committing.
 
 ## Troubleshooting
 
