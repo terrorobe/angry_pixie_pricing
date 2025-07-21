@@ -39,7 +39,7 @@ class LoadPatternCharts:
                 fig, ax = mplt.subplots(figsize=(14, 8), dpi=300)
 
                 # Color map for years
-                colors = cm.get_cmap('viridis')(np.linspace(0, 1, len(peaks_pivot.columns)))
+                colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(peaks_pivot.columns)))
 
                 # Plot each year
                 for i, year in enumerate(peaks_pivot.columns):
