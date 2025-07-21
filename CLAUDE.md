@@ -251,6 +251,29 @@ uv tree
 - Users need complete context about what data they're viewing
 - Grid lines help users quickly estimate price levels and ranges
 
+## 🏗️ Architecture Decisions
+
+### Caching Strategy
+- **Format**: CSV + gzip compression for portability and human readability
+- **Naming**: `{datasource}_{region}_{period}.csv.gz` (e.g., `energycharts_DE_2023-11.csv.gz`)
+- **Granularity**: Whole months for past data, flexible periods for current month
+- **Benefits**: Universal compatibility, easy inspection, clear data attribution
+
+### Day Type Classification
+- **Strategy**: Treat weekends and public holidays equivalently for electricity analysis
+- **Rationale**: Both represent reduced economic activity and different consumption patterns
+- **Implementation**: Three categories: `workday`, `weekend`, `holiday` (combine latter two for analysis)
+
+### DST Handling Approach
+- **Current**: Simple hour-of-day averaging, ignore DST complexity initially
+- **Future**: UTC-based analysis or local solar time approximation
+- **Rationale**: Duck curve analysis more important than DST precision initially
+
+### Visualization Philosophy
+- **Terminal-first**: Fast, dependency-light, SSH-friendly
+- **Human-readable**: Clear labels, appropriate scaling, informative summaries
+- **Progressive complexity**: Basic charts first, advanced analysis optional
+
 ## 📈 Analysis Capabilities
 
 ### Duck Factor Analysis
@@ -274,6 +297,26 @@ uv tree
 - **Solar Capacity**: SolarPower Europe, IRENA Global Energy Transformation statistics
 - **Grid Flexibility**: Estimated based on hydro storage, interconnection, demand response capabilities
 - **Note**: All data sources are approximate and compiled for modeling purposes
+
+## 🚀 Future Development Roadmap
+
+### Advanced Analysis Features
+- Renewable energy correlation analysis
+- Cross-country price comparison dashboards
+- Demand response event detection
+- Grid congestion price spike analysis
+- Carbon intensity correlation with pricing patterns
+
+### Data Integration Expansion
+- Multiple electricity market APIs (ENTSO-E, Nord Pool, etc.)
+- Weather data integration for renewable correlation analysis
+- Industrial production indices for demand pattern analysis
+- Real-time solar capacity tracking from national grid operators
+
+### Smart Meter Integration
+- Complete implementation of cost calculation functionality
+- 15-minute increment processing with dynamic pricing
+- Demand response optimization recommendations
 
 ## Recent Updates & Fixes
 
