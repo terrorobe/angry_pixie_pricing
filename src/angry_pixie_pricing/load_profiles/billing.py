@@ -63,7 +63,10 @@ class BillingReconstructedProfile(LoadProfile):
         """Reconstruct load profile from billing constraints."""
         # Generate initial profile from template
         df = self.template.generate_profile(
-            self.start_date, self.end_date, self.peak_power, self.total_consumption,
+            self.start_date,
+            self.end_date,
+            self.peak_power,
+            self.total_consumption,
         )
 
         # Apply custom constraints
@@ -74,7 +77,6 @@ class BillingReconstructedProfile(LoadProfile):
 
         # Final adjustment to match total consumption exactly
         return self._adjust_total_consumption(df)
-
 
     def _apply_constraints(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply custom constraints to the profile."""
@@ -192,7 +194,9 @@ class BillingReconstructedProfile(LoadProfile):
         return df
 
     def _apply_holiday_adjustments(
-        self, df: pd.DataFrame, holiday_dates: list[datetime],
+        self,
+        df: pd.DataFrame,
+        holiday_dates: list[datetime],
     ) -> pd.DataFrame:
         """Apply holiday load reductions."""
         for holiday in holiday_dates:
@@ -247,7 +251,9 @@ class BillingReconstructedProfile(LoadProfile):
 
     @classmethod
     def from_billing_data(
-        cls, billing_dict: dict[str, Any], profile_type: ProfileType | None = None,
+        cls,
+        billing_dict: dict[str, Any],
+        profile_type: ProfileType | None = None,
     ) -> "BillingReconstructedProfile":
         """Create profile from billing data dictionary.
 
@@ -274,7 +280,8 @@ class BillingReconstructedProfile(LoadProfile):
                 "factory": ProfileType.INDUSTRIAL,
             }
             profile_type = building_map.get(
-                billing_dict["building_type"].lower(), ProfileType.RESIDENTIAL,
+                billing_dict["building_type"].lower(),
+                ProfileType.RESIDENTIAL,
             )
 
         return cls(

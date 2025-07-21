@@ -16,9 +16,7 @@ def _find_project_root() -> str:
 
     # Look for project markers up the directory tree
     for parent in [current, *list(current.parents)]:
-        if any(
-            (parent / marker).exists() for marker in ["setup.py", "pyproject.toml", "CLAUDE.md"]
-        ):
+        if any((parent / marker).exists() for marker in ["setup.py", "pyproject.toml", "CLAUDE.md"]):
             return str(parent)
 
     # If no project root found, use current directory
@@ -111,7 +109,11 @@ def generate_duck_factor_filename(
 
 
 def generate_price_chart_filename(
-    region: str, start_date: str, end_date: str, chart_type: str = "line", base_dir: str = "images",
+    region: str,
+    start_date: str,
+    end_date: str,
+    chart_type: str = "line",
+    base_dir: str = "images",
 ) -> str:
     """
     Generate filename for price charts.
@@ -140,7 +142,11 @@ def generate_price_chart_filename(
 
 
 def get_multi_window_filenames(
-    region: str, start_date: str, end_date: str, windows: list[str], base_dir: str = "images",
+    region: str,
+    start_date: str,
+    end_date: str,
+    windows: list[str],
+    base_dir: str = "images",
 ) -> dict[str, str]:
     """
     Generate filenames for multi-window analysis.
@@ -159,7 +165,7 @@ def get_multi_window_filenames(
 
     for window_str in windows:
         # Convert window string like "7d" to integer
-        window_days = int(window_str.rstrip('d'))
+        window_days = int(window_str.rstrip("d"))
         filename = generate_duck_factor_filename(
             region=region,
             start_date=start_date,

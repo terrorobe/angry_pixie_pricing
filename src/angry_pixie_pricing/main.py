@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import click
 import numpy as np
@@ -83,7 +83,8 @@ def chart(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"],
+            ctx.obj["data_source"],
+            ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -102,7 +103,10 @@ def chart(
             if png:
                 # Auto-generate filename when using --png flag
                 output = generate_price_chart_filename(
-                    region, start_date_str, end_date_str, chart_type,
+                    region,
+                    start_date_str,
+                    end_date_str,
+                    chart_type,
                 )
             elif output is not None and not output.lower().endswith(".png"):
                 # Add .png extension if not present
@@ -112,38 +116,71 @@ def chart(
                 if chart_type == "line":
                     if output is not None:
                         create_png_price_chart(
-                            df, region, output, width=width or 12, height=height or 6,
+                            df,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 6,
                         )
                 elif chart_type == "hourly":
                     if output is not None:
                         create_png_hourly_analysis_chart(
-                            df, region, output, width=width or 12, height=height or 6,
+                            df,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 6,
                         )
                 elif chart_type == "hourly-workday":
                     if output is not None:
                         create_png_hourly_workday_chart(
-                            df, region, output, width=width or 12, height=height or 6,
+                            df,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 6,
                         )
                 elif chart_type == "all":
                     # Create multiple PNG files with smart names
                     line_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "line",
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        "line",
                     )
                     hourly_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "hourly",
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        "hourly",
                     )
                     workday_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "hourly-workday",
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        "hourly-workday",
                     )
 
                     create_png_price_chart(
-                        df, region, line_output, width=width or 12, height=height or 6,
+                        df,
+                        region,
+                        line_output,
+                        width=width or 12,
+                        height=height or 6,
                     )
                     create_png_hourly_analysis_chart(
-                        df, region, hourly_output, width=width or 12, height=height or 6,
+                        df,
+                        region,
+                        hourly_output,
+                        width=width or 12,
+                        height=height or 6,
                     )
                     create_png_hourly_workday_chart(
-                        df, region, workday_output, width=width or 12, height=height or 6,
+                        df,
+                        region,
+                        workday_output,
+                        width=width or 12,
+                        height=height or 6,
                     )
                 else:
                     click.echo(f"PNG output not supported for chart type: {chart_type}")
@@ -192,7 +229,9 @@ def chart(
 @click.option("--billing-data", help="Path to billing data JSON or use --peak-kw and --total-kwh")
 @click.option("--peak-kw", type=float, help="Peak power in kW (for billing reconstruction)")
 @click.option(
-    "--total-kwh", type=float, help="Total consumption in kWh (for model calibration period)",
+    "--total-kwh",
+    type=float,
+    help="Total consumption in kWh (for model calibration period)",
 )
 @click.option("--days", type=int, help="Billing period length in days (for model calibration)")
 @click.option(
@@ -207,7 +246,8 @@ def chart(
     help="Building profile type for reconstruction",
 )
 @click.option(
-    "--region", help="European region code (e.g., DE, FR, NL) - not needed with --profile-only",
+    "--region",
+    help="European region code (e.g., DE, FR, NL) - not needed with --profile-only",
 )
 @click.option(
     "--start-date",
@@ -219,7 +259,10 @@ def chart(
 @click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
 # Kids hotel specific options
 @click.option(
-    "--occupancy-rate", type=float, default=0.7, help="Hotel occupancy rate (0-1, default: 0.7)",
+    "--occupancy-rate",
+    type=float,
+    default=0.7,
+    help="Hotel occupancy rate (0-1, default: 0.7)",
 )
 @click.option(
     "--kitchen-weight",
@@ -228,7 +271,10 @@ def chart(
     help="Kitchen/restaurant load weight (default: 0.2)",
 )
 @click.option(
-    "--wellness-weight", type=float, default=0.25, help="Pool/wellness load weight (default: 0.25)",
+    "--wellness-weight",
+    type=float,
+    default=0.25,
+    help="Pool/wellness load weight (default: 0.25)",
 )
 @click.option(
     "--activity-weight",
@@ -237,16 +283,26 @@ def chart(
     help="Activity/game areas load weight (default: 0.15)",
 )
 @click.option(
-    "--rooms-weight", type=float, default=0.25, help="Guest rooms load weight (default: 0.25)",
+    "--rooms-weight",
+    type=float,
+    default=0.25,
+    help="Guest rooms load weight (default: 0.25)",
 )
 @click.option(
-    "--common-weight", type=float, default=0.15, help="Common areas load weight (default: 0.15)",
+    "--common-weight",
+    type=float,
+    default=0.15,
+    help="Common areas load weight (default: 0.15)",
 )
 @click.option(
-    "--day-kwh", type=float, help="Day consumption kWh (06:00-22:00) for calibration period",
+    "--day-kwh",
+    type=float,
+    help="Day consumption kWh (06:00-22:00) for calibration period",
 )
 @click.option(
-    "--night-kwh", type=float, help="Night consumption kWh (22:00-06:00) for calibration period",
+    "--night-kwh",
+    type=float,
+    help="Night consumption kWh (22:00-06:00) for calibration period",
 )
 @click.option("--show-profile", is_flag=True, help="Display load profile chart in terminal")
 @click.option("--profile-chart", help="Save load profile chart to PNG file")
@@ -367,13 +423,7 @@ def calculate(
             # Create profile template
             if profile_type == "kids_hotel":
                 # Validate facility weights sum to approximately 1.0
-                total_weight = (
-                    kitchen_weight
-                    + wellness_weight
-                    + activity_weight
-                    + rooms_weight
-                    + common_weight
-                )
+                total_weight = kitchen_weight + wellness_weight + activity_weight + rooms_weight + common_weight
                 if abs(total_weight - 1.0) > 0.05:
                     click.echo(
                         f"Warning: Facility weights sum to {total_weight:.2f}, should be close to 1.0",
@@ -388,7 +438,8 @@ def calculate(
                 }
 
                 profile_template: Any = KidsHotelProfile(
-                    occupancy_rate=occupancy_rate, facility_weights=facility_weights,
+                    occupancy_rate=occupancy_rate,
+                    facility_weights=facility_weights,
                 )
 
                 click.echo(f"Kids hotel profile: {occupancy_rate:.0%} occupancy")
@@ -611,7 +662,8 @@ def _display_load_profile(load_profile: Any, show_terminal: bool, save_png: str 
 
         # Show facility breakdown for kids hotel
         if hasattr(load_profile, "template") and hasattr(
-            load_profile.template, "get_kitchen_load_factor",
+            load_profile.template,
+            "get_kitchen_load_factor",
         ):
             _show_facility_breakdown(load_profile.template, stats["peak_power_kw"])
 
@@ -632,18 +684,10 @@ def _show_facility_breakdown(template: Any, peak_power: float) -> None:
         occupancy = template.occupancy_rate
 
         # Calculate estimated loads
-        kitchen_load = (
-            template.get_kitchen_load_factor(peak_hour, occupancy) * weights["kitchen"] * peak_power
-        )
-        wellness_load = (
-            template.get_wellness_load_factor(peak_hour, True) * weights["wellness"] * peak_power
-        )
-        activity_load = (
-            template.get_activity_area_load(peak_hour) * weights["activity"] * peak_power
-        )
-        room_load = (
-            template.get_guest_room_load(peak_hour, occupancy) * weights["rooms"] * peak_power
-        )
+        kitchen_load = template.get_kitchen_load_factor(peak_hour, occupancy) * weights["kitchen"] * peak_power
+        wellness_load = template.get_wellness_load_factor(peak_hour, True) * weights["wellness"] * peak_power
+        activity_load = template.get_activity_area_load(peak_hour) * weights["activity"] * peak_power
+        room_load = template.get_guest_room_load(peak_hour, occupancy) * weights["rooms"] * peak_power
         common_load = template.get_common_area_load(peak_hour) * weights["common"] * peak_power
 
         click.echo(
@@ -908,7 +952,9 @@ def _save_cost_chart(
         spot_prices = [
             cost / consumption if consumption > 0 else 0
             for cost, consumption in zip(
-                monthly_summary["energy_cost_eur"], monthly_summary["energy_kwh"], strict=False,
+                monthly_summary["energy_cost_eur"],
+                monthly_summary["energy_kwh"],
+                strict=False,
             )
         ]
         total_prices = [spot_price + handling_fee for spot_price in spot_prices]
@@ -1062,7 +1108,8 @@ def duck_factor(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"],
+            ctx.obj["data_source"],
+            ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -1098,7 +1145,11 @@ def duck_factor(
                 if chart_type == "time-series":
                     if png:
                         output = generate_duck_factor_filename(
-                            region, start_date_str, end_date_str, window_days, "timeseries",
+                            region,
+                            start_date_str,
+                            end_date_str,
+                            window_days,
+                            "timeseries",
                         )
                     elif output is not None and not output.lower().endswith(".png"):
                         output += ".png"
@@ -1114,13 +1165,21 @@ def duck_factor(
                 elif chart_type == "seasonal":
                     if png:
                         output = generate_duck_factor_filename(
-                            region, start_date_str, end_date_str, window_days, "seasonal",
+                            region,
+                            start_date_str,
+                            end_date_str,
+                            window_days,
+                            "seasonal",
                         )
                     elif output is not None and not output.lower().endswith(".png"):
                         output += ".png"
                     if output is not None:
                         create_png_seasonal_duck_chart(
-                            seasonal_data, region, output, width=width or 12, height=height or 8,
+                            seasonal_data,
+                            region,
+                            output,
+                            width=width or 12,
+                            height=height or 8,
                         )
                 elif chart_type == "multi-window":
                     # Create multiple window analysis with smart filenames
@@ -1131,7 +1190,10 @@ def duck_factor(
                     multi_results = analyzer.multi_window_analysis(df, windows, step_days)
 
                     window_filenames = get_multi_window_filenames(
-                        region, start_date_str, end_date_str, [f"{w}d" for w in windows],
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        [f"{w}d" for w in windows],
                     )
 
                     for window_key, window_df in multi_results.items():
@@ -1147,10 +1209,18 @@ def duck_factor(
                 elif chart_type == "all":
                     # Create all chart types with smart filenames
                     timeseries_output = generate_duck_factor_filename(
-                        region, start_date_str, end_date_str, window_days, "timeseries",
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        window_days,
+                        "timeseries",
                     )
                     seasonal_output = generate_duck_factor_filename(
-                        region, start_date_str, end_date_str, window_days, "seasonal",
+                        region,
+                        start_date_str,
+                        end_date_str,
+                        window_days,
+                        "seasonal",
                     )
 
                     create_png_duck_factor_chart(
@@ -1177,7 +1247,11 @@ def duck_factor(
             # Terminal output mode (default)
             if chart_type == "time-series" or chart_type == "all":
                 create_terminal_duck_factor_chart(
-                    duck_factors, region, window_days, width=width, height=height,
+                    duck_factors,
+                    region,
+                    window_days,
+                    width=width,
+                    height=height,
                 )
 
             # Additional terminal analysis summaries for other chart types
@@ -1220,7 +1294,12 @@ def _parse_time_period(period_str: str) -> int:
     return int(period_str)
 
 
-def _display_duck_factor_summary(duck_factors: pd.DataFrame, trends: dict[str, Any], seasonal_data: dict[str, Any], yoy_data: dict[str, Any]) -> None:
+def _display_duck_factor_summary(
+    duck_factors: pd.DataFrame,
+    trends: dict[str, Any],
+    seasonal_data: dict[str, Any],
+    yoy_data: dict[str, Any],
+) -> None:
     """Display a summary of duck factor analysis results."""
     click.echo("\n" + "=" * 60)
     click.echo("DUCK FACTOR ANALYSIS SUMMARY")
@@ -1332,7 +1411,8 @@ def negative_pricing(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"],
+            ctx.obj["data_source"],
+            ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -1437,7 +1517,11 @@ def negative_pricing(
             else:
                 # Terminal output mode (default)
                 create_terminal_negative_pricing_chart(
-                    df, region, width=width, height=height, near_zero_threshold=threshold,
+                    df,
+                    region,
+                    width=width,
+                    height=height,
+                    near_zero_threshold=threshold,
                 )
 
     except ValueError as e:
@@ -1486,9 +1570,7 @@ def _display_negative_pricing_summary(metrics: Any, seasonal_data: dict[str, Any
 
     # Monthly insights
     if metrics.monthly_breakdown:
-        monthly_avg = [
-            (month, data["avg_hours_per_day"]) for month, data in metrics.monthly_breakdown.items()
-        ]
+        monthly_avg = [(month, data["avg_hours_per_day"]) for month, data in metrics.monthly_breakdown.items()]
         monthly_avg.sort(key=lambda x: x[1], reverse=True)
 
         best_month = monthly_avg[0]
@@ -1527,9 +1609,7 @@ def _display_negative_pricing_summary(metrics: Any, seasonal_data: dict[str, Any
         )
         click.echo(f"Overall progress: {yearly['overall_progress_percentage']:.1f}%")
 
-        remaining = (
-            yearly["avg_theoretical_max_hours_per_day"] - yearly["avg_current_hours_per_day"]
-        )
+        remaining = yearly["avg_theoretical_max_hours_per_day"] - yearly["avg_current_hours_per_day"]
         click.echo(f"Remaining potential: {remaining:.1f} hours/day")
         click.echo(
             "NOTE: Solar potential estimates based on EU PVGIS, Global Solar Atlas, and Copernicus data",
@@ -1562,6 +1642,166 @@ def _display_negative_pricing_summary(metrics: Any, seasonal_data: dict[str, Any
             click.echo(
                 f"Summer vs Winter ratio: {seasonal_ratio:.1f}x (Summer: {summer_avg:.1f}h, Winter: {winter_avg:.1f}h)",
             )
+
+    click.echo("=" * 70)
+
+
+@cli.command()
+@click.option("--region", required=True, help="Region code (e.g., DE, AT, FR)")
+@click.option("--start-year", type=int, required=True, help="Starting year for analysis")
+@click.option("--end-year", type=int, required=True, help="Ending year for analysis (inclusive)")
+@click.option("--reference-year", type=int, help="Reference year for peak migration analysis")
+@click.option("--percentile", type=float, default=95.0, help="Percentile for peak calculation (default: 95)")
+@click.option("--output", help="Base filename for saving charts (auto-generates extensions)")
+@click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
+@click.option(
+    "--chart-type",
+    type=click.Choice(["hourly-evolution", "duck-curve", "peak-migration", "all"]),
+    default="hourly-evolution",
+    help="Type of chart to generate",
+)
+@click.pass_context
+def load_peaks(
+    ctx: click.Context,
+    region: str,
+    start_year: int,
+    end_year: int,
+    reference_year: int | None,
+    percentile: float,
+    output: str | None,
+    no_cache: bool,
+    chart_type: str,
+) -> None:
+    """Analyze hourly peak load evolution to detect behind-the-meter PV impacts."""
+    try:
+        from .analysis.load_patterns import LoadPatternAnalyzer
+        from .charts.load_patterns import LoadPatternCharts
+
+        # Initialize analyzer
+        analyzer: LoadPatternAnalyzer = LoadPatternAnalyzer()
+
+        click.echo(f"Fetching load data for {region} from {start_year}-{end_year}...")
+
+        # Fetch multi-year data
+        load_data = analyzer.fetch_multi_year_load_data(region, start_year, end_year)
+
+        if load_data.empty:
+            click.echo("No load data available for the specified period")
+            ctx.exit(1)
+
+        click.echo(f"Analyzing {len(load_data)} hours of load data...")
+
+        # Calculate hourly peaks
+        hourly_peaks = analyzer.calculate_hourly_peaks(load_data, group_by="year", percentile=percentile)
+
+        # Calculate duck curve evolution
+        duck_metrics = analyzer.detect_duck_curve_formation(load_data)
+
+        # Analyze peak migration if reference year specified
+        migration_analysis = None
+        if reference_year:
+            try:
+                migration_analysis = analyzer.analyze_peak_migration(hourly_peaks, reference_year=reference_year)
+            except ValueError as e:
+                click.echo(f"Peak migration analysis error: {e}")
+
+        # Display summary
+        _display_load_analysis_summary(hourly_peaks, duck_metrics, migration_analysis, region)
+
+        # Generate charts
+        if chart_type == "hourly-evolution" or chart_type == "all":
+            output_file = f"{output}_hourly_evolution.png" if output else None
+            LoadPatternCharts.plot_hourly_peaks_evolution(
+                hourly_peaks,
+                region,
+                title_suffix=f" ({start_year}-{end_year}, {percentile:.0f}th percentile)",
+                output_file=output_file,
+            )
+
+        if chart_type == "duck-curve" or chart_type == "all":
+            output_file = f"{output}_duck_curve.png" if output else None
+            LoadPatternCharts.plot_duck_curve_evolution(duck_metrics, region, output_file=output_file)
+
+        if (chart_type == "peak-migration" or chart_type == "all") and not hourly_peaks.empty:
+            ref_year = reference_year or hourly_peaks["year"].min()
+            output_file = f"{output}_peak_migration.png" if output else None
+            LoadPatternCharts.plot_peak_migration_heatmap(
+                hourly_peaks,
+                region,
+                reference_year=ref_year,
+                output_file=output_file,
+            )
+
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        ctx.exit(1)
+    except (ConnectionError, TimeoutError) as e:
+        click.echo(f"Network error while fetching data: {e}", err=True)
+        ctx.exit(1)
+    except ImportError as e:
+        click.echo(f"Missing dependency: {e}", err=True)
+        ctx.exit(1)
+
+
+def _display_load_analysis_summary(
+    hourly_peaks: pd.DataFrame,
+    duck_metrics: pd.DataFrame,
+    migration_analysis: pd.DataFrame | None,
+    region: str,
+) -> None:
+    """Display load pattern analysis summary."""
+    click.echo("\n" + "=" * 70)
+    click.echo("LOAD PATTERN ANALYSIS SUMMARY")
+    click.echo("=" * 70)
+
+    if not hourly_peaks.empty:
+        years = sorted(hourly_peaks["year"].unique())
+        click.echo(f"Analysis period: {years[0]}-{years[-1]} ({_get_country_name(region)})")
+        click.echo(f"Data points: {len(hourly_peaks)} hourly peak measurements")
+
+        # Peak load trends
+        first_year_peaks = hourly_peaks[hourly_peaks["year"] == years[0]]
+        last_year_peaks = hourly_peaks[hourly_peaks["year"] == years[-1]]
+
+        if not first_year_peaks.empty and not last_year_peaks.empty:
+            first_max = first_year_peaks["peak_load"].max() / 1000  # Convert to GW
+            last_max = last_year_peaks["peak_load"].max() / 1000
+            peak_change = ((last_max - first_max) / first_max * 100) if first_max > 0 else 0
+
+            click.echo(
+                f"Peak load change: {first_max:.1f} GW ({years[0]}) → {last_max:.1f} GW ({years[-1]}) ({peak_change:+.1f}%)",
+            )
+
+    if not duck_metrics.empty:
+        click.echo("\nDUCK CURVE EVOLUTION:")
+        first_year = duck_metrics.iloc[0]
+        last_year = duck_metrics.iloc[-1]
+
+        click.echo(f"Duck intensity: {first_year['duck_intensity_pct']:.1f}% → {last_year['duck_intensity_pct']:.1f}%")
+        click.echo(
+            f"Midday suppression: {first_year['midday_suppression_pct']:.1f}% → {last_year['midday_suppression_pct']:.1f}%",
+        )
+
+        # Calculate trends
+        if len(duck_metrics) > 1:
+            years = duck_metrics["year"]
+            intensity_trend = np.polyfit(years, duck_metrics["duck_intensity_pct"], 1)[0]
+            click.echo(f"Duck curve trend: {intensity_trend:+.2f}% intensity per year")
+
+    if migration_analysis is not None and not migration_analysis.empty:
+        click.echo("\nPEAK MIGRATION PATTERNS:")
+        recent_year = migration_analysis.iloc[-1]
+
+        morning_change = recent_year["morning_peak_change"]
+        evening_change = recent_year["evening_peak_change"]
+        midday_change = recent_year["midday_change"]
+
+        click.echo(f"Morning peaks (6-9 AM): {morning_change:+.1f}% vs reference")
+        click.echo(f"Evening peaks (5-8 PM): {evening_change:+.1f}% vs reference")
+        click.echo(f"Midday demand (11 AM-2 PM): {midday_change:+.1f}% vs reference")
+
+        if midday_change < -5 and (morning_change > 0 or evening_change > 0):
+            click.echo("🔍 Pattern suggests behind-the-meter PV impact: midday suppression with peak preservation")
 
     click.echo("=" * 70)
 

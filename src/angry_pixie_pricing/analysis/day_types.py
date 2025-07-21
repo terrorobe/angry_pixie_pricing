@@ -85,7 +85,9 @@ def classify_day_type(timestamp: datetime, country_code: str) -> DayType:
 
 
 def add_day_type_column(
-    df: pd.DataFrame, country_code: str, timestamp_col: str = "timestamp",
+    df: pd.DataFrame,
+    country_code: str,
+    timestamp_col: str = "timestamp",
 ) -> pd.DataFrame:
     """
     Add day type classification columns to a DataFrame.
@@ -113,7 +115,9 @@ def add_day_type_column(
 
 
 def get_workday_vs_nonworkday_split(
-    df: pd.DataFrame, country_code: str, timestamp_col: str = "timestamp",
+    df: pd.DataFrame,
+    country_code: str,
+    timestamp_col: str = "timestamp",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Split DataFrame into workday and non-workday (weekend/holiday) portions.
@@ -135,7 +139,9 @@ def get_workday_vs_nonworkday_split(
 
 
 def analyze_day_type_distribution(
-    df: pd.DataFrame, country_code: str, timestamp_col: str = "timestamp",
+    df: pd.DataFrame,
+    country_code: str,
+    timestamp_col: str = "timestamp",
 ) -> dict[str, int]:
     """
     Analyze the distribution of day types in a dataset.

@@ -72,14 +72,14 @@ class PriceDataSource(ABC):
         if all_data:
             combined_data = pd.concat(all_data, ignore_index=True)
             # Filter to exact requested range
-            mask = (combined_data["timestamp"] >= start_date) & (
-                combined_data["timestamp"] <= end_date
-            )
+            mask = (combined_data["timestamp"] >= start_date) & (combined_data["timestamp"] <= end_date)
             return combined_data[mask].reset_index(drop=True)
         return pd.DataFrame(columns=["timestamp", "price", "unit"])
 
     def _get_cache_periods(
-        self, start_date: datetime, end_date: datetime,
+        self,
+        start_date: datetime,
+        end_date: datetime,
     ) -> list[tuple[datetime, datetime]]:
         """
         Split date range into optimal cache periods.
@@ -91,9 +91,7 @@ class PriceDataSource(ABC):
 
         while current <= end_date:
             # Determine if this is a past month or current month
-            if current.year < today.year or (
-                current.year == today.year and current.month < today.month
-            ):
+            if current.year < today.year or (current.year == today.year and current.month < today.month):
                 # Past month - cache entire month
                 last_day = calendar.monthrange(current.year, current.month)[1]
                 period_end = current.replace(day=last_day, hour=23, minute=59, second=59)
@@ -138,10 +136,7 @@ class PriceDataSource(ABC):
         if (
             start_date == month_start
             and end_date.date() >= month_end.date()
-            and (
-                start_dt.year < today.year
-                or (start_dt.year == today.year and start_dt.month < today.month)
-            )
+            and (start_dt.year < today.year or (start_dt.year == today.year and start_dt.month < today.month))
         ):
             # Past whole month
             return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m')}.csv.gz"
@@ -151,7 +146,10 @@ class PriceDataSource(ABC):
         return f"{source_name}_{region_normalized}_{start_str}_to_{end_str}.csv.gz"
 
     def _get_cached_data(
-        self, region: str, start_date: datetime, end_date: datetime,
+        self,
+        region: str,
+        start_date: datetime,
+        end_date: datetime,
     ) -> pd.DataFrame | None:
         """Retrieve cached data if available (legacy method for backwards compatibility)."""
         # This method is kept for backwards compatibility but will use the new period-based logic
@@ -167,15 +165,16 @@ class PriceDataSource(ABC):
         if all_data:
             combined_data = pd.concat(all_data, ignore_index=True)
             # Filter to exact requested range
-            mask = (combined_data["timestamp"] >= start_date) & (
-                combined_data["timestamp"] <= end_date
-            )
+            mask = (combined_data["timestamp"] >= start_date) & (combined_data["timestamp"] <= end_date)
             return combined_data[mask].reset_index(drop=True)
 
         return None
 
     def _get_cached_period_data(
-        self, region: str, start_date: datetime, end_date: datetime,
+        self,
+        region: str,
+        start_date: datetime,
+        end_date: datetime,
     ) -> pd.DataFrame | None:
         """Retrieve cached data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
@@ -192,7 +191,11 @@ class PriceDataSource(ABC):
         return None
 
     def _cache_period_data(
-        self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame,
+        self,
+        region: str,
+        start_date: datetime,
+        end_date: datetime,
+        data: pd.DataFrame,
     ) -> None:
         """Cache the data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
@@ -203,7 +206,10 @@ class PriceDataSource(ABC):
         with suppress(Exception):
             # Write CSV with gzip compression
             data.to_csv(
-                cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S",
+                cache_file,
+                compression="gzip",
+                index=False,
+                date_format="%Y-%m-%d %H:%M:%S",
             )
 
     def clear_cache(self, region: str | None = None) -> None:
@@ -227,7 +233,10 @@ class PriceDataSource(ABC):
 
     @abstractmethod
     def _fetch_spot_prices(
-        self, region: str, start_date: datetime, end_date: datetime,
+        self,
+        region: str,
+        start_date: datetime,
+        end_date: datetime,
     ) -> pd.DataFrame:
         """
         Fetch hourly spot prices from the data source (no caching).

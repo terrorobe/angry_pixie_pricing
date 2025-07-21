@@ -1,6 +1,6 @@
 """Terminal-based charting using plotext."""
 
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from angry_pixie_pricing.analysis.negative_pricing import NegativePricingAnalyze
 try:
     import matplotlib.dates as mdates
     import matplotlib.pyplot as mpl_plt
-    from matplotlib.ticker import Locator, Formatter
+    from matplotlib.ticker import Formatter, Locator
 
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
@@ -793,7 +793,11 @@ def create_png_duck_factor_chart(
 
 
 def create_png_seasonal_duck_chart(
-    seasonal_data: dict[str, Any], region: str, output_path: str, width: int = 12, height: int = 8,
+    seasonal_data: dict[str, Any],
+    region: str,
+    output_path: str,
+    width: int = 12,
+    height: int = 8,
 ) -> None:
     """
     Create a PNG chart showing seasonal duck factor patterns.
@@ -828,7 +832,11 @@ def create_png_seasonal_duck_chart(
         stds = seasonal_df["std"]
 
         ax1.bar(
-            seasons, means, yerr=stds, capsize=5, color=["#A8DADC", "#457B9D", "#1D3557", "#F1C40F"],
+            seasons,
+            means,
+            yerr=stds,
+            capsize=5,
+            color=["#A8DADC", "#457B9D", "#1D3557", "#F1C40F"],
         )
         ax1.set_title("Duck Factor by Season", fontweight="bold")
         ax1.set_ylabel("Duck Factor")
@@ -871,14 +879,16 @@ def create_png_seasonal_duck_chart(
         ax3.text(0.1, 0.8, f"Peak Season: {peak_season}", fontsize=12, transform=ax3.transAxes)
         ax3.text(0.1, 0.6, f"Low Season: {low_season}", fontsize=12, transform=ax3.transAxes)
         ax3.text(
-            0.1, 0.4, f"Seasonal Range: {seasonal_range:.3f}", fontsize=12, transform=ax3.transAxes,
+            0.1,
+            0.4,
+            f"Seasonal Range: {seasonal_range:.3f}",
+            fontsize=12,
+            transform=ax3.transAxes,
         )
         ax3.text(
             0.1,
             0.2,
-            f"Peak/Low Ratio: {means.max() / means.min():.2f}x"
-            if means.min() > 0
-            else "Peak/Low Ratio: N/A",
+            f"Peak/Low Ratio: {means.max() / means.min():.2f}x" if means.min() > 0 else "Peak/Low Ratio: N/A",
             fontsize=12,
             transform=ax3.transAxes,
         )
@@ -945,12 +955,8 @@ def create_terminal_negative_pricing_chart(
 
     # Prepare hourly data
     hours = list(range(24))
-    negative_percentages = [
-        metrics.hourly_breakdown.get(h, {}).get("negative_percentage", 0) for h in hours
-    ]
-    near_zero_percentages = [
-        metrics.hourly_breakdown.get(h, {}).get("near_zero_percentage", 0) for h in hours
-    ]
+    negative_percentages = [metrics.hourly_breakdown.get(h, {}).get("negative_percentage", 0) for h in hours]
+    near_zero_percentages = [metrics.hourly_breakdown.get(h, {}).get("near_zero_percentage", 0) for h in hours]
 
     # Create the plot
     plt.bar(hours, negative_percentages, marker="fhd", color="red", label="Negative Prices")
@@ -1030,7 +1036,9 @@ def create_terminal_negative_pricing_timechart(
     except (ImportError, AttributeError, TypeError):
         # Fall back to basic function
         aggregated_data = calculate_aggregated_hours_timeseries(
-            df, aggregation_level, near_zero_threshold,
+            df,
+            aggregation_level,
+            near_zero_threshold,
         )
         has_severity = False
 
@@ -1052,11 +1060,7 @@ def create_terminal_negative_pricing_timechart(
         severe_hours = aggregated_data["severe_hours"].tolist()
         negative_hours = aggregated_data["negative_hours"].tolist()
         near_zero_hours = aggregated_data["near_zero_hours"].tolist()
-        cheap_hours = (
-            aggregated_data["cheap_hours"].tolist()
-            if "cheap_hours" in aggregated_data.columns
-            else None
-        )
+        cheap_hours = aggregated_data["cheap_hours"].tolist() if "cheap_hours" in aggregated_data.columns else None
 
         # Create the plot - use line plot for time series with different colors
         plt.plot(
@@ -1116,7 +1120,8 @@ def create_terminal_negative_pricing_timechart(
     }
 
     title_text, ylabel_text = aggregation_labels.get(
-        aggregation_level, ("Daily Hours", "Hours per Day"),
+        aggregation_level,
+        ("Daily Hours", "Hours per Day"),
     )
     title = f"{title_text} with Negative/Near-Zero Prices - {country_name}"
     subtitle = f"Negative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh"
@@ -1143,8 +1148,7 @@ def create_terminal_negative_pricing_timechart(
         # Use quarter names if available, otherwise use year-quarter format
         if "quarter_name" in aggregated_data.columns:
             labels = [
-                f"{row['time_period'].strftime('%Y')} {row['quarter_name']}"
-                for _, row in aggregated_data.iterrows()
+                f"{row['time_period'].strftime('%Y')} {row['quarter_name']}" for _, row in aggregated_data.iterrows()
             ]
         else:
             labels = [f"{ts.strftime('%Y')}-Q{((ts.month - 1) // 3) + 1}" for ts in time_periods]
@@ -1232,12 +1236,8 @@ def create_png_negative_pricing_chart(
     # 1. Hourly patterns (top-left)
     if metrics.hourly_breakdown:
         hours = list(range(24))
-        negative_pct = [
-            metrics.hourly_breakdown.get(h, {}).get("negative_percentage", 0) for h in hours
-        ]
-        near_zero_pct = [
-            metrics.hourly_breakdown.get(h, {}).get("near_zero_percentage", 0) for h in hours
-        ]
+        negative_pct = [metrics.hourly_breakdown.get(h, {}).get("negative_percentage", 0) for h in hours]
+        near_zero_pct = [metrics.hourly_breakdown.get(h, {}).get("near_zero_percentage", 0) for h in hours]
 
         ax1.bar(hours, negative_pct, alpha=0.7, color="red", label="Negative Prices")
         ax1.bar(hours, near_zero_pct, alpha=0.7, color="orange", label="Near-Zero Prices")
@@ -1252,9 +1252,7 @@ def create_png_negative_pricing_chart(
     # 2. Monthly patterns (top-right)
     if metrics.monthly_breakdown:
         months = list(range(1, 13))
-        monthly_negative = [
-            metrics.monthly_breakdown.get(m, {}).get("avg_hours_per_day", 0) for m in months
-        ]
+        monthly_negative = [metrics.monthly_breakdown.get(m, {}).get("avg_hours_per_day", 0) for m in months]
 
         ax2.plot(months, monthly_negative, marker="o", linewidth=2, markersize=6, color="#2E86AB")
         ax2.set_title("Average Negative Pricing Hours per Day by Month", fontweight="bold")
@@ -1299,12 +1297,17 @@ def create_png_negative_pricing_chart(
 
         for month, data in seasonal_data.items():
             if month != "yearly_summary" and "progress_metrics" in data and "error" not in data["progress_metrics"]:
-                    month_nums.append(month)
-                    progress_values.append(data["progress_metrics"]["progress_percentage"])
+                month_nums.append(month)
+                progress_values.append(data["progress_metrics"]["progress_percentage"])
 
         if month_nums:
             ax4.plot(
-                month_nums, progress_values, marker="s", linewidth=2, markersize=6, color="#E63946",
+                month_nums,
+                progress_values,
+                marker="s",
+                linewidth=2,
+                markersize=6,
+                color="#E63946",
             )
             ax4.set_title("Progress Toward Maximum by Month", fontweight="bold")
             ax4.set_xlabel("Month")
@@ -1382,7 +1385,9 @@ def create_png_negative_pricing_timechart(
     except (ImportError, AttributeError, TypeError):
         # Fall back to basic function
         aggregated_data = calculate_aggregated_hours_timeseries(
-            df, aggregation_level, near_zero_threshold,
+            df,
+            aggregation_level,
+            near_zero_threshold,
         )
         has_severity = False
 
@@ -1476,7 +1481,8 @@ def create_png_negative_pricing_timechart(
     }
 
     title_text, ylabel_text = aggregation_labels.get(
-        aggregation_level, ("Daily Hours", "Hours per Day"),
+        aggregation_level,
+        ("Daily Hours", "Hours per Day"),
     )
 
     ax.set_title(

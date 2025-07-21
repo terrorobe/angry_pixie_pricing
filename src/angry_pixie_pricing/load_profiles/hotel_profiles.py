@@ -116,7 +116,9 @@ class KidsHotelProfile(ProfileTemplate, HotelFacilityMixin):
     """Load profile for kids-focused hotel with specialized facilities."""
 
     def __init__(
-        self, occupancy_rate: float = 0.7, facility_weights: dict[str, float] | None = None,
+        self,
+        occupancy_rate: float = 0.7,
+        facility_weights: dict[str, float] | None = None,
     ):
         """Initialize kids hotel profile.
 

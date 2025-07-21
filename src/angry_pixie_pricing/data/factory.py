@@ -16,7 +16,9 @@ class DataSourceFactory:
 
     @classmethod
     def create_data_source(
-        cls, source_name: str = "default", cache_dir: str | None = None,
+        cls,
+        source_name: str = "default",
+        cache_dir: str | None = None,
     ) -> PriceDataSource:
         """
         Create a data source instance.

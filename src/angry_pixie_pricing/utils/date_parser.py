@@ -89,8 +89,7 @@ def validate_date_range(start_date: datetime, end_date: datetime) -> None:
     """
     if start_date > end_date:
         msg = (
-            f"Start date ({start_date.strftime('%Y-%m-%d')}) must be before "
-            f"end date ({end_date.strftime('%Y-%m-%d')})"
+            f"Start date ({start_date.strftime('%Y-%m-%d')}) must be before end date ({end_date.strftime('%Y-%m-%d')})"
         )
         raise ValueError(
             msg,
@@ -98,7 +97,8 @@ def validate_date_range(start_date: datetime, end_date: datetime) -> None:
 
 
 def parse_date_range(
-    start_date_str: str, end_date_str: str | None = None,
+    start_date_str: str,
+    end_date_str: str | None = None,
 ) -> tuple[datetime, datetime]:
     """
     Parse flexible start and end dates with smart defaults.
@@ -151,12 +151,7 @@ def format_date_range_description(start_date: datetime, end_date: datetime) -> s
                 return f"{start_date.strftime('%B %Y')}"
             return f"{start_str} to {end_str}"
         # Same year, different months
-        if (
-            start_date.month == 1
-            and start_date.day == 1
-            and end_date.month == 12
-            and end_date.day == 31
-        ):
+        if start_date.month == 1 and start_date.day == 1 and end_date.month == 12 and end_date.day == 31:
             return f"{start_date.year}"
         return f"{start_str} to {end_str}"
     # Different years

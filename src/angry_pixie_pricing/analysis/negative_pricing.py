@@ -109,7 +109,9 @@ class NegativePricingAnalyzer:
         }
 
     def analyze_negative_pricing_patterns(
-        self, df: pd.DataFrame, near_zero_threshold: float = 5.0,
+        self,
+        df: pd.DataFrame,
+        near_zero_threshold: float = 5.0,
     ) -> NegativePricingMetrics:
         """
         Analyze negative and near-zero pricing patterns in the data.
@@ -163,9 +165,7 @@ class NegativePricingAnalyzer:
                     "total_hours": month_total,
                     "negative_percentage": (month_negative / month_total) * 100,
                     "near_zero_percentage": (month_near_zero / month_total) * 100,
-                    "avg_hours_per_day": month_negative / (month_total / 24)
-                    if month_total > 0
-                    else 0,
+                    "avg_hours_per_day": month_negative / (month_total / 24) if month_total > 0 else 0,
                 }
 
         # Hourly breakdown (time of day patterns)
@@ -258,7 +258,9 @@ class NegativePricingAnalyzer:
         }
 
     def calculate_progress_metrics(
-        self, current_metrics: NegativePricingMetrics, month: int,
+        self,
+        current_metrics: NegativePricingMetrics,
+        month: int,
     ) -> dict[str, Any]:
         """
         Calculate progress toward maximum renewable saturation.
@@ -285,7 +287,8 @@ class NegativePricingAnalyzer:
         # Estimate years to saturation based on current growth trends
         # This would need historical data for accurate projection
         estimated_years_to_saturation = remaining_potential / max(
-            current_avg * 0.1, 0.1,
+            current_avg * 0.1,
+            0.1,
         )  # Assume 10% annual growth
 
         return {
@@ -294,11 +297,7 @@ class NegativePricingAnalyzer:
             "progress_percentage": min(progress_percentage, 100),
             "remaining_potential_hours": remaining_potential,
             "estimated_years_to_saturation": min(estimated_years_to_saturation, 50),
-            "saturation_level": "Low"
-            if progress_percentage < 30
-            else "Medium"
-            if progress_percentage < 70
-            else "High",
+            "saturation_level": "Low" if progress_percentage < 30 else "Medium" if progress_percentage < 70 else "High",
         }
 
     def analyze_seasonal_patterns(self, df: pd.DataFrame) -> dict[int | str, Any]:
@@ -389,7 +388,8 @@ class NegativePricingAnalyzer:
 
 
 def calculate_daily_hours_timeseries(
-    df: pd.DataFrame, near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0,
 ) -> pd.DataFrame:
     """
     Calculate daily hours with negative/near-zero prices for timechart visualization.
@@ -411,9 +411,7 @@ def calculate_daily_hours_timeseries(
     df_daily["is_near_zero"] = df_daily["price"] <= near_zero_threshold
 
     # Group by date and count hours
-    daily_counts = (
-        df_daily.groupby("date").agg({"is_negative": "sum", "is_near_zero": "sum"}).reset_index()
-    )
+    daily_counts = df_daily.groupby("date").agg({"is_negative": "sum", "is_near_zero": "sum"}).reset_index()
 
     daily_counts.columns = ["date", "negative_hours", "near_zero_hours"]
 
@@ -424,7 +422,8 @@ def calculate_daily_hours_timeseries(
 
 
 def calculate_weekly_hours_timeseries(
-    df: pd.DataFrame, near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0,
 ) -> pd.DataFrame:
     """
     Calculate weekly average daily hours with negative/near-zero prices for timechart visualization.
@@ -471,7 +470,8 @@ def calculate_weekly_hours_timeseries(
 
 
 def calculate_monthly_hours_timeseries(
-    df: pd.DataFrame, near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0,
 ) -> pd.DataFrame:
     """
     Calculate monthly average daily hours with negative/near-zero prices for timechart visualization.
@@ -518,7 +518,8 @@ def calculate_monthly_hours_timeseries(
 
 
 def calculate_solar_quarter_hours_timeseries(
-    df: pd.DataFrame, near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    near_zero_threshold: float = 5.0,
 ) -> pd.DataFrame:
     """
     Calculate solar quarter average daily hours with negative/near-zero prices for timechart visualization.
@@ -566,14 +567,16 @@ def calculate_solar_quarter_hours_timeseries(
     # Q1: Feb-Apr -> Jan 1, Q2: May-Jul -> Apr 1, Q3: Aug-Oct -> Jul 1, Q4: Nov-Jan -> Oct 1
     quarter_start_months = {1: 1, 2: 4, 3: 7, 4: 10}  # Approximate quarter starts
     df_solar["quarter_start"] = df_solar.apply(
-        lambda row: pd.Timestamp(row["year"], quarter_start_months[row["quarter_num"]], 1), axis=1,
+        lambda row: pd.Timestamp(row["year"], quarter_start_months[row["quarter_num"]], 1),
+        axis=1,
     )
 
     # Handle year transitions for Q4 (Nov-Jan spans years)
     # For Nov-Dec, use current year. For Jan, use previous year's Q4
     mask_jan = df_solar["month"] == 1
     df_solar.loc[mask_jan, "quarter_start"] = df_solar.loc[mask_jan].apply(
-        lambda row: pd.Timestamp(row["year"] - 1, 10, 1), axis=1,
+        lambda row: pd.Timestamp(row["year"] - 1, 10, 1),
+        axis=1,
     )
 
     # Add boolean columns for negative and near-zero pricing
@@ -599,9 +602,7 @@ def calculate_solar_quarter_hours_timeseries(
     quarter_agg["near_zero_hours"] = quarter_agg["is_near_zero"] / quarter_agg["days_in_quarter"]
 
     # Return only the columns we need
-    result = quarter_agg[
-        ["quarter_start", "quarter_name", "negative_hours", "near_zero_hours"]
-    ].copy()
+    result = quarter_agg[["quarter_start", "quarter_name", "negative_hours", "near_zero_hours"]].copy()
 
     return result.sort_values("quarter_start")
 
@@ -721,7 +722,9 @@ def calculate_aggregated_hours_timeseries_with_severity(
 
 
 def calculate_aggregated_hours_timeseries(
-    df: pd.DataFrame, aggregation_level: str = "daily", near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    aggregation_level: str = "daily",
+    near_zero_threshold: float = 5.0,
 ) -> pd.DataFrame:
     """
     Calculate aggregated hours with negative/near-zero prices for timechart visualization.
@@ -750,8 +753,7 @@ def calculate_aggregated_hours_timeseries(
         # Keep quarter_name column for chart labeling
     else:
         msg = (
-            f"Invalid aggregation_level: {aggregation_level}. "
-            "Must be 'daily', 'weekly', 'monthly', or 'solar-quarters'"
+            f"Invalid aggregation_level: {aggregation_level}. Must be 'daily', 'weekly', 'monthly', or 'solar-quarters'"
         )
         raise ValueError(
             msg,
@@ -761,7 +763,9 @@ def calculate_aggregated_hours_timeseries(
 
 
 def analyze_negative_pricing_comprehensive(
-    df: pd.DataFrame, region: str, near_zero_threshold: float = 5.0,
+    df: pd.DataFrame,
+    region: str,
+    near_zero_threshold: float = 5.0,
 ) -> dict[str, Any]:
     """
     Convenience function for comprehensive negative pricing analysis.

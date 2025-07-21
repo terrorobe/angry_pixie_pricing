@@ -64,27 +64,15 @@ class HourlyPriceAnalyzer:
         df["hour"] = df["timestamp"].dt.hour
 
         # Calculate statistics by hour
-        hourly_stats = (
-            df.groupby("hour")["price"]
-            .agg(["mean", "median", "std", "min", "max", "count"])
-            .reset_index()
-        )
+        hourly_stats = df.groupby("hour")["price"].agg(["mean", "median", "std", "min", "max", "count"]).reset_index()
 
         # Calculate confidence intervals (95%)
-        hourly_stats["ci_lower"] = hourly_stats["mean"] - 1.96 * (
-            hourly_stats["std"] / np.sqrt(hourly_stats["count"])
-        )
-        hourly_stats["ci_upper"] = hourly_stats["mean"] + 1.96 * (
-            hourly_stats["std"] / np.sqrt(hourly_stats["count"])
-        )
+        hourly_stats["ci_lower"] = hourly_stats["mean"] - 1.96 * (hourly_stats["std"] / np.sqrt(hourly_stats["count"]))
+        hourly_stats["ci_upper"] = hourly_stats["mean"] + 1.96 * (hourly_stats["std"] / np.sqrt(hourly_stats["count"]))
 
         # Add percentage of negative prices by hour
-        negative_by_hour = (
-            df[df["price"] < 0].groupby("hour").size().reindex(range(24), fill_value=0)
-        )
-        total_by_hour = (
-            df.groupby("hour").size().reindex(range(24), fill_value=1)
-        )  # Avoid division by zero
+        negative_by_hour = df[df["price"] < 0].groupby("hour").size().reindex(range(24), fill_value=0)
+        total_by_hour = df.groupby("hour").size().reindex(range(24), fill_value=1)  # Avoid division by zero
         hourly_stats["negative_price_pct"] = (negative_by_hour / total_by_hour * 100).to_numpy()
 
         return hourly_stats.fillna(0)
@@ -107,23 +95,17 @@ class HourlyPriceAnalyzer:
 
         # Find morning peak (6-10 AM)
         morning_mask = (hours >= 6) & (hours <= 10)
-        morning_peak_hour = (
-            hours[morning_mask][np.argmax(prices[morning_mask])] if morning_mask.any() else None
-        )
+        morning_peak_hour = hours[morning_mask][np.argmax(prices[morning_mask])] if morning_mask.any() else None
         morning_peak_price = np.max(prices[morning_mask]) if morning_mask.any() else None
 
         # Find midday minimum (10 AM - 3 PM)
         midday_mask = (hours >= 10) & (hours <= 15)
-        midday_min_hour = (
-            hours[midday_mask][np.argmin(prices[midday_mask])] if midday_mask.any() else None
-        )
+        midday_min_hour = hours[midday_mask][np.argmin(prices[midday_mask])] if midday_mask.any() else None
         midday_min_price = np.min(prices[midday_mask]) if midday_mask.any() else None
 
         # Find evening peak (5-9 PM)
         evening_mask = (hours >= 17) & (hours <= 21)
-        evening_peak_hour = (
-            hours[evening_mask][np.argmax(prices[evening_mask])] if evening_mask.any() else None
-        )
+        evening_peak_hour = hours[evening_mask][np.argmax(prices[evening_mask])] if evening_mask.any() else None
         evening_peak_price = np.max(prices[evening_mask]) if evening_mask.any() else None
 
         # Calculate duck curve depth (morning peak to midday minimum)
@@ -150,7 +132,8 @@ class HourlyPriceAnalyzer:
         }
 
     def compare_workday_vs_nonworkday(
-        self, analysis_results: dict[str, pd.DataFrame],
+        self,
+        analysis_results: dict[str, pd.DataFrame],
     ) -> dict[str, Any]:
         """
         Compare duck curve characteristics between workdays and non-workdays.

@@ -120,7 +120,6 @@ class ProfileTemplate:
         )
 
 
-
 class ResidentialProfile(ProfileTemplate):
     """Typical residential load profile."""
 

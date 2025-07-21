@@ -164,12 +164,8 @@ class CostCalculator:
             **price_stats,
             "load_stats": load_stats,
             "hourly_distribution": hourly_avg.to_dict(),
-            "weekday_consumption_kwh": weekday_stats.loc[True, "energy_kwh"]
-            if True in weekday_stats.index
-            else 0,
-            "weekend_consumption_kwh": weekday_stats.loc[False, "energy_kwh"]
-            if False in weekday_stats.index
-            else 0,
+            "weekday_consumption_kwh": weekday_stats.loc[True, "energy_kwh"] if True in weekday_stats.index else 0,
+            "weekend_consumption_kwh": weekday_stats.loc[False, "energy_kwh"] if False in weekday_stats.index else 0,
             "peak_cost_hour": hourly_avg["avg_cost_per_kwh"].idxmax(),
             "lowest_cost_hour": hourly_avg["avg_cost_per_kwh"].idxmin(),
         }
@@ -187,9 +183,7 @@ class CostCalculator:
         aligned_data["grid_fees_eur"] = aligned_data["energy_kwh"] * self.grid_fees_kwh
         aligned_data["other_fees_eur"] = aligned_data["energy_kwh"] * self.other_fees_kwh
         aligned_data["total_cost_eur"] = (
-            aligned_data["energy_cost_eur"]
-            + aligned_data["grid_fees_eur"]
-            + aligned_data["other_fees_eur"]
+            aligned_data["energy_cost_eur"] + aligned_data["grid_fees_eur"] + aligned_data["other_fees_eur"]
         )
 
         return aligned_data
@@ -237,7 +231,9 @@ class CostCalculator:
         }
 
     def optimize_load_shifting(
-        self, shiftable_percentage: float = 0.2, _max_shift_hours: int = 4,
+        self,
+        shiftable_percentage: float = 0.2,
+        _max_shift_hours: int = 4,
     ) -> dict[str, Any]:
         """Calculate potential savings from load shifting.
 

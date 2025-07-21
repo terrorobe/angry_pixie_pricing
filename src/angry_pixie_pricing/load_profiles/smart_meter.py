@@ -60,7 +60,10 @@ class SmartMeterProfile(LoadProfile):
         """Load and parse raw CSV data."""
         # Read CSV
         df = pd.read_csv(
-            self.csv_path, delimiter=self.delimiter, decimal=self.decimal, encoding=self.encoding,
+            self.csv_path,
+            delimiter=self.delimiter,
+            decimal=self.decimal,
+            encoding=self.encoding,
         )
 
         # Parse timestamps
@@ -72,7 +75,6 @@ class SmartMeterProfile(LoadProfile):
         # Set timestamp as index
         df = df.set_index(self.timestamp_col)
         return df.sort_index()
-
 
     def get_profile(self) -> pd.DataFrame:
         """Get the load profile from smart meter data."""
@@ -109,10 +111,12 @@ class SmartMeterProfile(LoadProfile):
         # Handle any remaining NaN values
         return result.fillna(0)
 
-
     @classmethod
     def from_standard_formats(
-        cls, csv_path: Path, format_type: str = "auto", **kwargs: Any,
+        cls,
+        csv_path: Path,
+        format_type: str = "auto",
+        **kwargs: Any,
     ) -> "SmartMeterProfile":
         """Create profile from common smart meter formats.
 
@@ -194,6 +198,7 @@ class SmartMeterProfile(LoadProfile):
             "negative_energy_count": negative_energy,
             "unrealistic_power_count": unrealistic_power,
             "data_quality_score": min(
-                100, 100 * (1 - len(missing_intervals) / len(expected_intervals)),
+                100,
+                100 * (1 - len(missing_intervals) / len(expected_intervals)),
             ),
         }

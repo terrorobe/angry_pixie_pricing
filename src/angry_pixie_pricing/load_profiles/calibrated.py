@@ -54,7 +54,10 @@ class CalibratedProfile(LoadProfile):
 
         # Generate template day profile
         template_profile = self.profile_template.generate_profile(
-            day_start, day_end, self.peak_kw, self.daily_kwh,
+            day_start,
+            day_end,
+            self.peak_kw,
+            self.daily_kwh,
         )
 
         # Apply day/night constraints to template if provided
@@ -199,9 +202,7 @@ class CalibratedProfile(LoadProfile):
             "peak_kw_target": self.peak_kw,
             "calculation_period_days": calc_days,
             "total_consumption_target": self.total_consumption,
-            "template_used": self.profile_template.name
-            if hasattr(self.profile_template, "name")
-            else "Unknown",
+            "template_used": self.profile_template.name if hasattr(self.profile_template, "name") else "Unknown",
         }
 
         if self.day_night_split:

@@ -27,7 +27,10 @@ class RollingDuckAnalyzer:
         self.hourly_analyzer = HourlyPriceAnalyzer(region)
 
     def calculate_rolling_duck_factor(
-        self, df: pd.DataFrame, window_days: int = 30, step_days: int = 7,
+        self,
+        df: pd.DataFrame,
+        window_days: int = 30,
+        step_days: int = 7,
     ) -> pd.DataFrame:
         """
         Calculate rolling duck factor over time with configurable windows.
@@ -59,9 +62,7 @@ class RollingDuckAnalyzer:
             window_end = current_date + timedelta(days=1)  # Include end date
 
             # Filter data for window
-            window_mask = (df["timestamp"].dt.date >= window_start) & (
-                df["timestamp"].dt.date < window_end
-            )
+            window_mask = (df["timestamp"].dt.date >= window_start) & (df["timestamp"].dt.date < window_end)
             window_df = df[window_mask].copy()
 
             if len(window_df) >= 24:  # Need at least one day of data
@@ -81,7 +82,10 @@ class RollingDuckAnalyzer:
         return pd.DataFrame(results)
 
     def multi_window_analysis(
-        self, df: pd.DataFrame, windows: list[int] | None = None, step_days: int = 7,
+        self,
+        df: pd.DataFrame,
+        windows: list[int] | None = None,
+        step_days: int = 7,
     ) -> dict[str, pd.DataFrame]:
         """
         Calculate duck factors for multiple window sizes.
@@ -128,22 +132,16 @@ class RollingDuckAnalyzer:
         monthly_avg["season"] = monthly_avg["month"].map(self._get_season)
 
         # Quarterly averages
-        quarterly_avg = (
-            df.groupby("quarter")["duck_factor"].agg(["mean", "std", "count"]).reset_index()
-        )
+        quarterly_avg = df.groupby("quarter")["duck_factor"].agg(["mean", "std", "count"]).reset_index()
 
         # Seasonal averages
         seasonal_avg = (
-            df.groupby(df["month"].map(self._get_season))["duck_factor"]
-            .agg(["mean", "std", "count"])
-            .reset_index()
+            df.groupby(df["month"].map(self._get_season))["duck_factor"].agg(["mean", "std", "count"]).reset_index()
         )
         seasonal_avg.columns = ["season", "mean", "std", "count"]
 
         # Find peak seasonal difference
-        seasonal_range = (
-            seasonal_avg["mean"].max() - seasonal_avg["mean"].min() if not seasonal_avg.empty else 0
-        )
+        seasonal_range = seasonal_avg["mean"].max() - seasonal_avg["mean"].min() if not seasonal_avg.empty else 0
 
         return {
             "monthly_patterns": monthly_avg,
@@ -153,13 +151,13 @@ class RollingDuckAnalyzer:
             "peak_season": seasonal_avg.loc[seasonal_avg["mean"].idxmax(), "season"]
             if not seasonal_avg.empty
             else None,
-            "low_season": seasonal_avg.loc[seasonal_avg["mean"].idxmin(), "season"]
-            if not seasonal_avg.empty
-            else None,
+            "low_season": seasonal_avg.loc[seasonal_avg["mean"].idxmin(), "season"] if not seasonal_avg.empty else None,
         }
 
     def detect_trends(
-        self, duck_factors_df: pd.DataFrame, min_data_points: int = 20,
+        self,
+        duck_factors_df: pd.DataFrame,
+        min_data_points: int = 20,
     ) -> dict[str, Any]:
         """
         Detect long-term trends in duck factor evolution.
@@ -174,15 +172,12 @@ class RollingDuckAnalyzer:
         if len(duck_factors_df) < min_data_points:
             return {
                 "error": (
-                    f"Insufficient data points for trend analysis "
-                    f"(need {min_data_points}, got {len(duck_factors_df)})"
+                    f"Insufficient data points for trend analysis (need {min_data_points}, got {len(duck_factors_df)})"
                 ),
             }
 
         df = duck_factors_df.copy()
-        df["date_numeric"] = (
-            pd.to_datetime(df["date"]).astype(np.int64) / 10**9
-        )  # Convert to unix timestamp
+        df["date_numeric"] = pd.to_datetime(df["date"]).astype(np.int64) / 10**9  # Convert to unix timestamp
 
         # Linear trend
         try:
@@ -201,9 +196,7 @@ class RollingDuckAnalyzer:
 
         # Volatility analysis
         volatility = df["duck_factor"].std()
-        rolling_volatility = (
-            df["duck_factor"].rolling(window=min(10, len(df) // 4), center=True).std()
-        )
+        rolling_volatility = df["duck_factor"].rolling(window=min(10, len(df) // 4), center=True).std()
         volatility_trend = 0
 
         if len(rolling_volatility.dropna()) > 5:
@@ -275,9 +268,7 @@ class RollingDuckAnalyzer:
         return {
             "annual_averages": annual_avg,
             "monthly_yoy_patterns": monthly_yoy_df,
-            "avg_annual_change": annual_avg["yoy_change"].mean()
-            if "yoy_change" in annual_avg.columns
-            else 0,
+            "avg_annual_change": annual_avg["yoy_change"].mean() if "yoy_change" in annual_avg.columns else 0,
             "peak_growth_year": annual_avg.loc[annual_avg["yoy_change"].idxmax(), "year"]
             if not annual_avg.empty and "yoy_change" in annual_avg.columns
             else None,
@@ -295,7 +286,9 @@ class RollingDuckAnalyzer:
         return "Fall"
 
     def _find_inflection_points(
-        self, df: pd.DataFrame, sensitivity: float = 0.1,
+        self,
+        df: pd.DataFrame,
+        sensitivity: float = 0.1,
     ) -> list[dict[str, Any]]:
         """Find significant changes in duck factor trends."""
         if len(df) < 10:
@@ -351,7 +344,10 @@ class RollingDuckAnalyzer:
 
 
 def analyze_rolling_duck_patterns(
-    df: pd.DataFrame, region: str, window_days: int = 30, step_days: int = 7,
+    df: pd.DataFrame,
+    region: str,
+    window_days: int = 30,
+    step_days: int = 7,
 ) -> dict[str, Any]:
     """
     Convenience function for comprehensive rolling duck analysis.

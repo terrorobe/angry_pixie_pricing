@@ -1,7 +1,9 @@
 """Shared CLI option definitions for reuse across commands."""
 
 from __future__ import annotations
-from typing import Any, Callable
+
+from collections.abc import Callable
+from typing import Any
 
 import click
 
@@ -10,10 +12,13 @@ import click
 def add_date_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add standard date options to a command."""
     func = click.option(
-        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
+        "--start-date",
+        required=True,
+        help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
     )(func)
     return click.option(
-        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
+        "--end-date",
+        help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
     )(func)
 
 
@@ -27,7 +32,10 @@ def add_region_option(func: Callable[..., Any]) -> Callable[..., Any]:
 def add_output_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add output-related options to a command."""
     func = click.option(
-        "--output", "-o", default=None, help="Output PNG file path (enables PNG mode).",
+        "--output",
+        "-o",
+        default=None,
+        help="Output PNG file path (enables PNG mode).",
     )(func)
     func = click.option("--png", is_flag=True, help="Generate PNG with auto-generated filename.")(
         func,
@@ -59,10 +67,16 @@ def add_standard_options(func: Callable[..., Any]) -> Callable[..., Any]:
 def add_duck_factor_options(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to add duck factor specific options."""
     func = click.option(
-        "--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)",
+        "--window",
+        "-w",
+        default="30d",
+        help="Rolling window size (e.g., 7d, 30d, 90d)",
     )(func)
     func = click.option(
-        "--step", "-s", default="7d", help="Step size between calculations (e.g., 1d, 7d)",
+        "--step",
+        "-s",
+        default="7d",
+        help="Step size between calculations (e.g., 1d, 7d)",
     )(func)
     return click.option(
         "--chart-type",
@@ -110,7 +124,9 @@ def add_negative_pricing_options(func: Callable[..., Any]) -> Callable[..., Any]
         help="Extreme negative price threshold (EUR/MWh, default: -100)",
     )(func)
     func = click.option(
-        "--cheap-threshold", default=40.0, help="Cheap price threshold (EUR/MWh, default: 40)",
+        "--cheap-threshold",
+        default=40.0,
+        help="Cheap price threshold (EUR/MWh, default: 40)",
     )(func)
     func = click.option(
         "--chart-type",
@@ -149,11 +165,14 @@ class CommonOptions:
     REGION = click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
 
     START_DATE = click.option(
-        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
+        "--start-date",
+        required=True,
+        help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
     )
 
     END_DATE = click.option(
-        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
+        "--end-date",
+        help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
     )
 
     OUTPUT = click.option("--output", "-o", help="Output PNG file path (enables PNG mode)")
