@@ -1,9 +1,10 @@
 """Energy-Charts.info data source implementation."""
 
-import requests
-import pandas as pd
 from datetime import datetime
-from typing import Dict, List
+
+import pandas as pd
+import requests
+
 from .base import PriceDataSource
 
 
@@ -78,7 +79,7 @@ class EnergyChartsDataSource(PriceDataSource):
         except (KeyError, ValueError) as e:
             raise ValueError(f"Invalid response from energy-charts.info API: {e}")
 
-    def get_supported_regions(self) -> List[str]:
+    def get_supported_regions(self) -> list[str]:
         """
         Get list of supported region/country codes.
 
@@ -87,7 +88,7 @@ class EnergyChartsDataSource(PriceDataSource):
         """
         return list(self.REGION_MAPPING.keys())
 
-    def get_data_source_info(self) -> Dict[str, str]:
+    def get_data_source_info(self) -> dict[str, str]:
         """
         Get information about the data source.
 

@@ -17,54 +17,44 @@ Angry Pixie Pricing is a comprehensive Python tool for analyzing electricity pri
 
 ## Development Setup
 
-### Python Environment
-The project uses a Python virtual environment located at `./venv/` in the project root.
-
-**CRITICAL**: Always activate the virtual environment before running any commands:
-```bash
-# Activate virtual environment (required for all operations)
-source venv/bin/activate
-
-# Verify environment is active (should show project path)
-which python
-which angry-pixie
-```
+### Modern Python with uv
+This project uses `uv` for fast, reliable Python package management.
 
 ### Installation
 ```bash
-# If venv doesn't exist, create it first:
-python3 -m venv venv
-source venv/bin/activate
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Install all dependencies and create virtual environment
+uv sync
 
-# Install package in development mode
-pip install -e .
+# Install package in development mode with dev dependencies
+uv sync --dev
 ```
 
 ### Running Commands
-All commands must be run with the virtual environment activated:
 ```bash
-# ALWAYS start with this
-source venv/bin/activate
+# Run commands directly with uv (no activation needed!)
+uv run angry-pixie chart --region DE --start-date 2024-07
 
-# Then run commands
+# Or activate the virtual environment for traditional usage
+source .venv/bin/activate
 angry-pixie chart --region DE --start-date 2024-07
-angry-pixie negative-pricing --region AT --start-date 2020
-angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024
 ```
 
 ### Testing & Debugging
 ```bash
-# Activate venv first
-source venv/bin/activate
+# Run tests with uv
+uv run pytest tests/
 
-# Run tests
-python test_script.py
+# Run specific test file
+uv run python test_script.py
 
 # Direct module execution
-python -m src.angry_pixie_pricing.main --help
+uv run python -m src.angry_pixie_pricing.main --help
+
+# Interactive Python with all dependencies
+uv run ipython
 ```
 
 ## Commands
@@ -81,114 +71,113 @@ The tool supports flexible date formats for convenience:
 #### Basic Price Charts
 ```bash
 # Generate terminal charts (flexible date formats)
-angry-pixie chart --region DE --start-date 2024-07                    # July 2024
-angry-pixie chart --region DE --start-date 2024                       # Whole year 2024
-angry-pixie chart --region DE --start-date 2024-07-15                 # July 15 to today
+uv run angry-pixie chart --region DE --start-date 2024-07              # July 2024
+uv run angry-pixie chart --region DE --start-date 2024                 # Whole year 2024
+uv run angry-pixie chart --region DE --start-date 2024-07-15           # July 15 to today
 
 # Generate PNG charts with auto-naming
-angry-pixie chart --region DE --start-date 2024-07 --output auto
+uv run angry-pixie chart --region DE --start-date 2024-07 --output auto
 # Creates: images/prices_de_20240701_20240731.png
 
 # Duck curve analysis  
-angry-pixie chart --region DE --start-date 2024-07 --chart-type hourly --output duck_curve
+uv run angry-pixie chart --region DE --start-date 2024-07 --chart-type hourly --output duck_curve
 ```
 
 #### Duck Factor Analysis (Rolling Window)
 ```bash
 # Basic duck factor evolution over 6 years
-angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024
+uv run angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024
 
 # Seasonal duck factor analysis
-angry-pixie duck-factor --region DE --start-date 2024 --chart-type seasonal --output analysis
+uv run angry-pixie duck-factor --region DE --start-date 2024 --chart-type seasonal --output analysis
 
 # Multi-window comparison (7d, 30d, 90d windows)
-angry-pixie duck-factor --region DE --start-date 2020 --chart-type multi-window --output multi
+uv run angry-pixie duck-factor --region DE --start-date 2020 --chart-type multi-window --output multi
 
 # Custom window and step size
-angry-pixie duck-factor --region DE --start-date 2024 --window 14d --step 3d
+uv run angry-pixie duck-factor --region DE --start-date 2024 --window 14d --step 3d
 ```
 
 #### Negative Pricing Analysis
 ```bash
 # Analyze negative pricing patterns with solar potential
-angry-pixie negative-pricing --region DE --start-date 2024
+uv run angry-pixie negative-pricing --region DE --start-date 2024
 
 # Custom threshold and PNG output
-angry-pixie negative-pricing --region DE --start-date 2024-06 --threshold 10.0 --output negative_analysis
+uv run angry-pixie negative-pricing --region DE --start-date 2024-06 --threshold 10.0 --output negative_analysis
 
 # Multi-year negative pricing trends
-angry-pixie negative-pricing --region DE --start-date 2020 --end-date 2024
+uv run angry-pixie negative-pricing --region DE --start-date 2020 --end-date 2024
 ```
 
 #### Smart Meter Cost Calculation
 ```bash
 # Calculate costs from smart meter data
-angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-07
+uv run angry-pixie calculate --usage-data meter_data.csv --region DE --start-date 2024-07
 ```
 
 ### Development Commands
 ```bash
-# ALWAYS activate venv first
-source venv/bin/activate
-
 # Run tests
-pytest tests/
+uv run pytest tests/
 
-# Code formatting
-black src/ tests/
-
-# Linting
-flake8 src/ tests/
+# Code formatting and linting with ruff
+uv run ruff format src/ tests/
+uv run ruff check src/ tests/ --fix
 
 # Type checking
-mypy src/
+uv run mypy src/
+
+# All checks at once
+uv run ruff format . && uv run ruff check . --fix && uv run mypy src/
 ```
 
 ## Troubleshooting
 
-### Python Environment Issues
+### uv Installation Issues
 
-**Error: `command not found: python` or `command not found: angry-pixie`**
+**Error: `command not found: uv`**
 ```bash
-# Solution: Activate the virtual environment
-source venv/bin/activate
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or with Homebrew on macOS
+brew install uv
 ```
 
-**Error: `ModuleNotFoundError: No module named 'pandas'` (or other dependencies)**
+**Error: `ModuleNotFoundError` when running commands**
 ```bash
-# Solution: Virtual environment not activated or dependencies not installed
-source venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-```
+# Solution: Always use 'uv run' prefix or activate the environment
+uv run angry-pixie --help
 
-**Error: `externally-managed-environment` when using pip**
-```bash
-# Solution: Use the virtual environment instead of system pip
-source venv/bin/activate  # This uses venv's pip, not system pip
-pip install -e .
+# Or activate and use traditionally
+source .venv/bin/activate
+angry-pixie --help
 ```
 
 **Testing Fixes:**
 ```bash
-# Create a simple test script to verify environment
-source venv/bin/activate
-python -c "import pandas; import numpy; print('Environment OK')"
+# Verify uv installation
+uv --version
+
+# Test environment setup
+uv run python -c "import pandas; import numpy; print('Environment OK')"
 
 # Test specific functionality
-angry-pixie --help
-angry-pixie chart --region DE --start-date 2024-01 --end-date 2024-01
+uv run angry-pixie --help
+uv run angry-pixie chart --region DE --start-date 2024-01
 ```
 
 ### Environment Verification
 ```bash
-# Check virtual environment is active
-source venv/bin/activate
-which python     # Should show: /Users/terrorobe/source/angry_pixie_pricing/venv/bin/python
-which angry-pixie # Should show: /Users/terrorobe/source/angry_pixie_pricing/venv/bin/angry-pixie
+# Check Python version
+uv run python --version  # Should show Python 3.12.x
 
-# Check installed packages
-pip list | grep -E "(pandas|numpy|click|plotext)"
+# List installed packages
+uv pip list
+
+# Show project dependencies
+uv tree
 ```
 
 ## Architecture
@@ -298,8 +287,7 @@ pip list | grep -E "(pandas|numpy|click|plotext)"
 ### Current System Status
 All major analysis commands are working correctly:
 ```bash
-source venv/bin/activate
-angry-pixie chart --region DE --start-date 2024-07                    # ✅ Working
-angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024 # ✅ Working  
-angry-pixie negative-pricing --region AT --start-date 2020            # ✅ Fixed & Working
+uv run angry-pixie chart --region DE --start-date 2024-07                    # ✅ Working
+uv run angry-pixie duck-factor --region DE --start-date 2019 --end-date 2024 # ✅ Working  
+uv run angry-pixie negative-pricing --region AT --start-date 2020            # ✅ Fixed & Working
 ```

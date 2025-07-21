@@ -1,17 +1,17 @@
 """Abstract base class for electricity price data sources."""
 
-from abc import ABC, abstractmethod
-from datetime import datetime, date, timedelta
-from typing import Dict, List, Optional, Tuple
-import pandas as pd
-from pathlib import Path
 import calendar
+from abc import ABC, abstractmethod
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+import pandas as pd
 
 
 class PriceDataSource(ABC):
     """Abstract base class for electricity price data sources with caching."""
 
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """
         Initialize the data source with optional cache directory.
 
@@ -49,34 +49,38 @@ class PriceDataSource(ABC):
 
         # Determine optimal fetch/cache periods
         fetch_periods = self._get_cache_periods(start_date, end_date)
-        
+
         all_data = []
         for period_start, period_end in fetch_periods:
             # Check cache for this period
             period_data = None
             if use_cache:
                 period_data = self._get_cached_period_data(region, period_start, period_end)
-            
+
             if period_data is None:
                 # Fetch fresh data for this period
                 period_data = self._fetch_spot_prices(region, period_start, period_end)
-                
+
                 # Cache the data for this period
                 if use_cache:
                     self._cache_period_data(region, period_start, period_end, period_data)
-            
+
             all_data.append(period_data)
-        
+
         # Combine all periods and filter to requested range
         if all_data:
             combined_data = pd.concat(all_data, ignore_index=True)
             # Filter to exact requested range
-            mask = (combined_data['timestamp'] >= start_date) & (combined_data['timestamp'] <= end_date)
+            mask = (combined_data["timestamp"] >= start_date) & (
+                combined_data["timestamp"] <= end_date
+            )
             return combined_data[mask].reset_index(drop=True)
         else:
-            return pd.DataFrame(columns=['timestamp', 'price', 'unit'])
+            return pd.DataFrame(columns=["timestamp", "price", "unit"])
 
-    def _get_cache_periods(self, start_date: datetime, end_date: datetime) -> List[Tuple[datetime, datetime]]:
+    def _get_cache_periods(
+        self, start_date: datetime, end_date: datetime
+    ) -> list[tuple[datetime, datetime]]:
         """
         Split date range into optimal cache periods.
         Past months are cached whole, current month is cached by day.
@@ -84,10 +88,12 @@ class PriceDataSource(ABC):
         periods = []
         current = start_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         today = date.today()
-        
+
         while current <= end_date:
             # Determine if this is a past month or current month
-            if current.year < today.year or (current.year == today.year and current.month < today.month):
+            if current.year < today.year or (
+                current.year == today.year and current.month < today.month
+            ):
                 # Past month - cache entire month
                 last_day = calendar.monthrange(current.year, current.month)[1]
                 period_end = current.replace(day=last_day, hour=23, minute=59, second=59)
@@ -104,61 +110,72 @@ class PriceDataSource(ABC):
                 next_month = month_start.replace(day=28) + timedelta(days=4)
                 month_end = next_month - timedelta(days=next_month.day)
                 month_end = month_end.replace(hour=23, minute=59, second=59)
-                
+
                 # Limit to requested end date
                 actual_end = min(end_date, month_end)
-                
+
                 # For current month, we'll still fetch the whole month but cache by day
                 # This simplifies the logic while keeping cache granular
                 periods.append((month_start, actual_end))
                 break
-        
+
         return periods
 
     def _get_cache_filename(self, region: str, start_date: datetime, end_date: datetime) -> str:
         """Generate readable cache filename with data source attribution."""
         today = date.today()
         start_dt = start_date.date()
-        
+
         # Get a clean data source name for filename and normalize region case
-        source_name = self.__class__.__name__.replace('DataSource', '').lower()
+        source_name = self.__class__.__name__.replace("DataSource", "").lower()
         region_normalized = region.upper()
-        
+
         # Check if this is a whole month
         month_start = start_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_day = calendar.monthrange(start_date.year, start_date.month)[1]
         month_end = start_date.replace(day=last_day, hour=23, minute=59, second=59)
-        
-        if (start_date == month_start and 
-            end_date.date() >= month_end.date() and
-            (start_dt.year < today.year or (start_dt.year == today.year and start_dt.month < today.month))):
+
+        if (
+            start_date == month_start
+            and end_date.date() >= month_end.date()
+            and (
+                start_dt.year < today.year
+                or (start_dt.year == today.year and start_dt.month < today.month)
+            )
+        ):
             # Past whole month
             return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m')}.csv.gz"
         else:
             # Day-based or partial month
             return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.csv.gz"
 
-    def _get_cached_data(self, region: str, start_date: datetime, end_date: datetime) -> Optional[pd.DataFrame]:
+    def _get_cached_data(
+        self, region: str, start_date: datetime, end_date: datetime
+    ) -> pd.DataFrame | None:
         """Retrieve cached data if available (legacy method for backwards compatibility)."""
         # This method is kept for backwards compatibility but will use the new period-based logic
         periods = self._get_cache_periods(start_date, end_date)
         all_data = []
-        
+
         for period_start, period_end in periods:
             period_data = self._get_cached_period_data(region, period_start, period_end)
             if period_data is None:
                 return None  # If any period is missing, return None to force full refetch
             all_data.append(period_data)
-        
+
         if all_data:
             combined_data = pd.concat(all_data, ignore_index=True)
             # Filter to exact requested range
-            mask = (combined_data['timestamp'] >= start_date) & (combined_data['timestamp'] <= end_date)
+            mask = (combined_data["timestamp"] >= start_date) & (
+                combined_data["timestamp"] <= end_date
+            )
             return combined_data[mask].reset_index(drop=True)
-        
+
         return None
 
-    def _get_cached_period_data(self, region: str, start_date: datetime, end_date: datetime) -> Optional[pd.DataFrame]:
+    def _get_cached_period_data(
+        self, region: str, start_date: datetime, end_date: datetime
+    ) -> pd.DataFrame | None:
         """Retrieve cached data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
         cache_file = self.cache_dir / cache_filename
@@ -166,11 +183,7 @@ class PriceDataSource(ABC):
         if cache_file.exists():
             try:
                 # Read CSV with gzip compression
-                df = pd.read_csv(
-                    cache_file, 
-                    compression='gzip',
-                    parse_dates=['timestamp']
-                )
+                df = pd.read_csv(cache_file, compression="gzip", parse_dates=["timestamp"])
                 return df
             except Exception:
                 # If cache is corrupted, remove it
@@ -178,7 +191,9 @@ class PriceDataSource(ABC):
 
         return None
 
-    def _cache_period_data(self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame):
+    def _cache_period_data(
+        self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame
+    ):
         """Cache the data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
         cache_file = self.cache_dir / cache_filename
@@ -186,16 +201,13 @@ class PriceDataSource(ABC):
         try:
             # Write CSV with gzip compression
             data.to_csv(
-                cache_file,
-                compression='gzip',
-                index=False,
-                date_format='%Y-%m-%d %H:%M:%S'
+                cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S"
             )
         except Exception:
             # If caching fails, continue without error
             pass
 
-    def clear_cache(self, region: Optional[str] = None):
+    def clear_cache(self, region: str | None = None):
         """
         Clear cached data.
 
@@ -208,7 +220,7 @@ class PriceDataSource(ABC):
                 cache_file.unlink(missing_ok=True)
         else:
             # Clear cache files for specific region
-            source_name = self.__class__.__name__.replace('DataSource', '').lower()
+            source_name = self.__class__.__name__.replace("DataSource", "").lower()
             region_normalized = region.upper()
             pattern = f"{source_name}_{region_normalized}_*.csv.gz"
             for cache_file in self.cache_dir.glob(pattern):
@@ -232,7 +244,7 @@ class PriceDataSource(ABC):
         pass
 
     @abstractmethod
-    def get_supported_regions(self) -> List[str]:
+    def get_supported_regions(self) -> list[str]:
         """
         Get list of supported region/country codes.
 
@@ -242,7 +254,7 @@ class PriceDataSource(ABC):
         pass
 
     @abstractmethod
-    def get_data_source_info(self) -> Dict[str, str]:
+    def get_data_source_info(self) -> dict[str, str]:
         """
         Get information about the data source.
 

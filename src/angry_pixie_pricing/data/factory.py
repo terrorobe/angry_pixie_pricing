@@ -1,6 +1,5 @@
 """Factory for creating data source instances."""
 
-from typing import Optional
 from .base import PriceDataSource
 from .energy_charts import EnergyChartsDataSource
 
@@ -15,7 +14,7 @@ class DataSourceFactory:
 
     @classmethod
     def create_data_source(
-        self, source_name: str = "default", cache_dir: Optional[str] = None
+        self, source_name: str = "default", cache_dir: str | None = None
     ) -> PriceDataSource:
         """
         Create a data source instance.
@@ -32,9 +31,7 @@ class DataSourceFactory:
         """
         if source_name not in self.AVAILABLE_SOURCES:
             available = ", ".join(self.AVAILABLE_SOURCES.keys())
-            raise ValueError(
-                f"Unknown data source '{source_name}'. Available: {available}"
-            )
+            raise ValueError(f"Unknown data source '{source_name}'. Available: {available}")
 
         source_class = self.AVAILABLE_SOURCES[source_name]
         return source_class(cache_dir=cache_dir)
@@ -42,4 +39,4 @@ class DataSourceFactory:
     @classmethod
     def list_available_sources(cls) -> list[str]:
         """Get list of available data source names."""
-        return [name for name in cls.AVAILABLE_SOURCES.keys() if name != "default"]
+        return [name for name in cls.AVAILABLE_SOURCES if name != "default"]

@@ -4,4 +4,4 @@ from .base import PriceDataSource
 from .energy_charts import EnergyChartsDataSource
 from .factory import DataSourceFactory
 
-__all__ = ["PriceDataSource", "EnergyChartsDataSource", "DataSourceFactory"]
+__all__ = ["DataSourceFactory", "EnergyChartsDataSource", "PriceDataSource"]
