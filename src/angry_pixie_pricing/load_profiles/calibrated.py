@@ -77,7 +77,8 @@ class CalibratedProfile(LoadProfile):
     def _apply_day_night_split(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply day/night split to template profile."""
         if self.day_night_split is None:
-            raise ValueError("day_night_split must be set to use this method")
+            msg = "day_night_split must be set to use this method"
+            raise ValueError(msg)
         daily_day_kwh, daily_night_kwh = self.day_night_split
 
         # Define day/night masks

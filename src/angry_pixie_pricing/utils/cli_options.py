@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 # Common date options used across multiple commands

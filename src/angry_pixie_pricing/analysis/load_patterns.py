@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from ..data.energy_charts import EnergyChartsDataSource
+from angry_pixie_pricing.data.energy_charts import EnergyChartsDataSource
 
 
 class LoadPatternAnalyzer:
@@ -39,7 +39,7 @@ class LoadPatternAnalyzer:
             end_date = datetime(year, 12, 31)
 
             try:
-                year_data = self.data_source.fetch_load_data(
+                year_data = self.data_source.get_load_data(
                     region=region,
                     start_date=start_date,
                     end_date=end_date,
@@ -52,7 +52,8 @@ class LoadPatternAnalyzer:
                 continue
 
         if not all_data:
-            raise ValueError(f"No load data available for {region} from {start_year}-{end_year}")
+            msg = f"No load data available for {region} from {start_year}-{end_year}"
+            raise ValueError(msg)
 
         return pd.concat(all_data, ignore_index=True)
 
@@ -78,7 +79,7 @@ class LoadPatternAnalyzer:
         df["hour"] = df["timestamp"].dt.hour
 
         # Group by time period and hour, calculate peak loads
-        peaks = (
+        return (
             df.groupby([group_by, "hour"])["load_mw"]
             .agg(
                 [
@@ -91,7 +92,6 @@ class LoadPatternAnalyzer:
             .reset_index()
         )
 
-        return peaks
 
     def calculate_daily_peaks(
         self,
@@ -155,11 +155,12 @@ class LoadPatternAnalyzer:
             reference_year = df["year"].min()
 
         # Pivot to get peak loads by hour and year
-        peaks_pivot = df.pivot(index="hour", columns="year", values="peak_load")
+        peaks_pivot = df.pivot_table(index="hour", columns="year", values="peak_load", aggfunc="mean")
 
         # Calculate changes relative to reference year
         if reference_year not in peaks_pivot.columns:
-            raise ValueError(f"Reference year {reference_year} not found in data")
+            msg = f"Reference year {reference_year} not found in data"
+            raise ValueError(msg)
 
         reference_peaks = peaks_pivot[reference_year]
 

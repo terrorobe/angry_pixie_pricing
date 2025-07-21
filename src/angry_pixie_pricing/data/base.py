@@ -57,7 +57,11 @@ class PriceDataSource(ABC):
             period_data = None
             if use_cache:
                 period_data = self.cache_manager._get_cached_period_data(
-                    self.source_name, "prices", region, period_start, period_end,
+                    self.source_name,
+                    "prices",
+                    region,
+                    period_start,
+                    period_end,
                 )
 
             if period_data is None:
@@ -67,7 +71,12 @@ class PriceDataSource(ABC):
                 # Cache the data for this period
                 if use_cache and not period_data.empty:
                     self.cache_manager._cache_period_data(
-                        self.source_name, "prices", region, period_start, period_end, period_data,
+                        self.source_name,
+                        "prices",
+                        region,
+                        period_start,
+                        period_end,
+                        period_data,
                     )
 
             all_data.append(period_data)
@@ -113,13 +122,17 @@ class PriceDataSource(ABC):
             period_data = None
             if use_cache:
                 period_data = self.cache_manager._get_cached_period_data(
-                    self.source_name, "load", region, period_start, period_end,
+                    self.source_name,
+                    "load",
+                    region,
+                    period_start,
+                    period_end,
                 )
 
             if period_data is None:
                 # Fetch fresh data for this period
-                if hasattr(self, "fetch_load_data"):
-                    period_data = self.fetch_load_data(region, period_start, period_end)
+                if hasattr(self, "_fetch_load_data"):
+                    period_data = self._fetch_load_data(region, period_start, period_end)
                 else:
                     # Fallback to empty DataFrame if method not implemented
                     period_data = pd.DataFrame()
@@ -127,7 +140,12 @@ class PriceDataSource(ABC):
                 # Cache the data for this period
                 if use_cache and not period_data.empty:
                     self.cache_manager._cache_period_data(
-                        self.source_name, "load", region, period_start, period_end, period_data,
+                        self.source_name,
+                        "load",
+                        region,
+                        period_start,
+                        period_end,
+                        period_data,
                     )
 
             all_data.append(period_data)

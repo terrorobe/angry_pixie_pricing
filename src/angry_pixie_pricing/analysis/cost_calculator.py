@@ -201,7 +201,8 @@ class CostCalculator:
             self.calculate()
 
         if self._calculation_results is None:
-            raise ValueError("Calculation failed")
+            msg = "Calculation failed"
+            raise ValueError(msg)
 
         total_kwh = self._calculation_results["total_consumption_kwh"]
 

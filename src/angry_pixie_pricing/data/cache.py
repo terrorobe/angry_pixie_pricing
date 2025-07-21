@@ -172,7 +172,12 @@ class DataCacheManager:
 
         for period_start, period_end in periods:
             period_data = self._get_cached_period_data(
-                source, data_type, region, period_start, period_end, parser_kwargs,
+                source,
+                data_type,
+                region,
+                period_start,
+                period_end,
+                parser_kwargs,
             )
             if period_data is None:
                 return None  # If any period is missing, return None to force full refetch

@@ -93,7 +93,7 @@ class EnergyChartsDataSource(PriceDataSource):
         """
         return list(self.REGION_MAPPING.keys())
 
-    def fetch_load_data(
+    def _fetch_load_data(
         self,
         region: str,
         start_date: datetime,

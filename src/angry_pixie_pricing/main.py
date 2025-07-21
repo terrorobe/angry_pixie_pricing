@@ -1061,17 +1061,61 @@ def sources() -> None:
 
 @cli.command()
 @click.option("--region", help="Clear cache for specific region only")
+@click.option(
+    "--yes-i-am-a-complete-moron-who-wants-to-delete-valuable-cache-data",
+    is_flag=True,
+    help="Required safety flag to confirm you really want to delete cached data",
+)
 @click.pass_context
-def clear_cache(ctx: click.Context, region: str | None) -> None:
+def clear_cache(
+    ctx: click.Context,
+    region: str | None,
+    yes_i_am_a_complete_moron_who_wants_to_delete_valuable_cache_data: bool,
+) -> None:
     """Clear cached price data."""
+    if not yes_i_am_a_complete_moron_who_wants_to_delete_valuable_cache_data:
+        click.echo(
+            "ERROR: This command will permanently delete valuable cached data!\n"
+            "If you really want to proceed, use:\n"
+            "  --yes-i-am-a-complete-moron-who-wants-to-delete-valuable-cache-data\n"
+            "\nThis safety flag exists because some idiot once accidentally deleted\n"
+            "265 cache files while testing code changes. Don't be that idiot.",
+            err=True,
+        )
+        ctx.exit(1)
+
     data_source = DataSourceFactory.create_data_source(ctx.obj["data_source"], ctx.obj["cache_dir"])
+
+    # Show what will be deleted first
+    from .data.cache import DataCacheManager
+
+    cache_manager = DataCacheManager(ctx.obj["cache_dir"] or "data/cache")
+    cache_info = cache_manager.get_cache_info()
+
+    click.echo("\n⚠️  ABOUT TO DELETE:")
+    click.echo(f"   📁 {cache_info['total_files']} cache files")
+    click.echo(f"   💾 {cache_info['total_size_mb']:.1f} MB of data")
+    if region:
+        click.echo(f"   🌍 Region: {region} only")
+    else:
+        click.echo("   🌍 ALL regions and data types")
+    types_str = ", ".join(
+        f"{src}_{typ}"
+        for src, types in cache_info["by_source_type"].items()
+        for typ in types
+    )
+    click.echo(f"   🗂️  Types: {types_str}")
+
+    if not click.confirm("\nAre you ABSOLUTELY SURE you want to permanently delete this cached data?", default=False):
+        click.echo("❌ Cancelled. Cache data preserved.")
+        ctx.exit(0)
 
     data_source.clear_cache(region)
 
     if region:
-        click.echo(f"Cleared cache for region: {region}")
+        click.echo(f"✅ Cleared cache for region: {region}")
     else:
-        click.echo("Cleared all cached data")
+        click.echo("✅ Cleared all cached data")
 
 
 @cli.command()
@@ -1669,7 +1713,7 @@ def load_peaks(
     reference_year: int | None,
     percentile: float,
     output: str | None,
-    no_cache: bool,
+    _no_cache: bool,
     chart_type: str,
 ) -> None:
     """Analyze hourly peak load evolution to detect behind-the-meter PV impacts."""
@@ -1768,9 +1812,11 @@ def _display_load_analysis_summary(
             last_max = last_year_peaks["peak_load"].max() / 1000
             peak_change = ((last_max - first_max) / first_max * 100) if first_max > 0 else 0
 
-            click.echo(
-                f"Peak load change: {first_max:.1f} GW ({years[0]}) → {last_max:.1f} GW ({years[-1]}) ({peak_change:+.1f}%)",
+            peak_msg = (
+                f"Peak load change: {first_max:.1f} GW ({years[0]}) → "
+                f"{last_max:.1f} GW ({years[-1]}) ({peak_change:+.1f}%)"
             )
+            click.echo(peak_msg)
 
     if not duck_metrics.empty:
         click.echo("\nDUCK CURVE EVOLUTION:")
@@ -1778,9 +1824,11 @@ def _display_load_analysis_summary(
         last_year = duck_metrics.iloc[-1]
 
         click.echo(f"Duck intensity: {first_year['duck_intensity_pct']:.1f}% → {last_year['duck_intensity_pct']:.1f}%")
-        click.echo(
-            f"Midday suppression: {first_year['midday_suppression_pct']:.1f}% → {last_year['midday_suppression_pct']:.1f}%",
+        suppression_msg = (
+            f"Midday suppression: {first_year['midday_suppression_pct']:.1f}% → "
+            f"{last_year['midday_suppression_pct']:.1f}%"
         )
+        click.echo(suppression_msg)
 
         # Calculate trends
         if len(duck_metrics) > 1:

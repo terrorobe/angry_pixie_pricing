@@ -2,9 +2,8 @@
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import plotext as plt
+import plotext as plt_term
 
 
 class LoadPatternCharts:
@@ -27,19 +26,19 @@ class LoadPatternCharts:
             output_file: Optional file path for saving chart as image
         """
         # Pivot data for plotting
-        peaks_pivot = peaks_df.pivot(index="hour", columns="year", values="peak_load")
+        peaks_pivot = peaks_df.pivot_table(index="hour", columns="year", values="peak_load", aggfunc="mean")
 
         if output_file:
             # High-resolution matplotlib chart
             try:
-                import matplotlib.dates as mdates
-                import matplotlib.pyplot as mplt
-                from matplotlib import cm
+                import matplotlib.pyplot as plt
 
-                fig, ax = mplt.subplots(figsize=(14, 8), dpi=300)
+                fig, ax = plt.subplots(figsize=(14, 8), dpi=300)
 
-                # Color map for years
-                colors = cm.get_cmap("viridis")(np.linspace(0, 1, len(peaks_pivot.columns)))
+                # Use energy hue progression palette for years
+                from angry_pixie_pricing.utils.color_palettes import get_year_colors
+
+                colors = get_year_colors(len(peaks_pivot.columns), "energy")
 
                 # Plot each year
                 for i, year in enumerate(peaks_pivot.columns):
@@ -70,13 +69,13 @@ class LoadPatternCharts:
                 # Legend
                 ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", title="Year", title_fontsize=10, fontsize=9)
 
-                mplt.tight_layout()
+                plt.tight_layout()
 
                 # Save high-resolution image
                 output_path = Path(output_file)
                 output_path.parent.mkdir(parents=True, exist_ok=True)
-                mplt.savefig(output_path, dpi=300, bbox_inches="tight")
-                mplt.close()
+                plt.savefig(output_path, dpi=300, bbox_inches="tight")
+                plt.close()
 
                 print(f"📊 High-resolution chart saved: {output_path}")
 
@@ -85,14 +84,14 @@ class LoadPatternCharts:
                 output_file = None
 
         # Terminal chart
-        plt.clear_data()
-        plt.clear_color()
+        plt_term.clear_data()
+        plt_term.clear_color()
 
         # Plot each year as a separate line
         for year in peaks_pivot.columns:
             year_data = peaks_pivot[year].dropna()
             if len(year_data) > 0:
-                plt.plot(
+                plt_term.plot(
                     year_data.index.tolist(),
                     (year_data / 1000).tolist(),  # Convert to GW
                     marker="hd",
@@ -100,15 +99,15 @@ class LoadPatternCharts:
                 )
 
         # Chart formatting
-        plt.title(f"Hourly Peak Load Evolution - {region.upper()}{title_suffix}")
-        plt.xlabel("Hour of Day")
-        plt.ylabel("Peak Load (GW)")
+        plt_term.title(f"Hourly Peak Load Evolution - {region.upper()}{title_suffix}")
+        plt_term.xlabel("Hour of Day")
+        plt_term.ylabel("Peak Load (GW)")
 
         # Set x-axis labels
-        plt.xticks(list(range(0, 24, 3)), [f"{h:02d}:00" for h in range(0, 24, 3)])
+        plt_term.xticks(list(range(0, 24, 3)), [f"{h:02d}:00" for h in range(0, 24, 3)])
 
-        plt.grid(True)
-        plt.show()
+        plt_term.grid(True)
+        plt_term.show()
 
     @staticmethod
     def plot_duck_curve_evolution(
@@ -127,26 +126,32 @@ class LoadPatternCharts:
         if output_file:
             # High-resolution matplotlib chart
             try:
-                import matplotlib.pyplot as mplt
+                import matplotlib.pyplot as plt
 
-                fig, ((ax1, ax2), (ax3, ax4)) = mplt.subplots(2, 2, figsize=(15, 10), dpi=300)
+                fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10), dpi=300)
 
                 years = duck_metrics_df["year"]
 
+                # Get consistent colors from energy palette
+                from angry_pixie_pricing.utils.color_palettes import get_year_colors
+
+                metric_colors = get_year_colors(4, "energy")  # 4 different metrics
+
                 # Duck intensity
-                ax1.plot(years, duck_metrics_df["duck_intensity_pct"], marker="o", linewidth=2, color="orange")
+                ax1.plot(years, duck_metrics_df["duck_intensity_pct"], marker="o", linewidth=2, color=metric_colors[0])
                 ax1.set_title("Duck Curve Intensity", fontweight="bold")
                 ax1.set_ylabel("Intensity (%)", fontweight="bold")
                 ax1.grid(True, alpha=0.3)
 
-                # Peak loads
+                # Peak loads - use energy palette for different peak types
+                peak_colors = get_year_colors(3, "energy")  # 3 peak types
                 ax2.plot(
                     years,
                     duck_metrics_df["morning_peak_mw"] / 1000,
                     marker="s",
                     linewidth=2,
                     label="Morning Peak",
-                    color="blue",
+                    color=peak_colors[0],
                 )
                 ax2.plot(
                     years,
@@ -154,7 +159,7 @@ class LoadPatternCharts:
                     marker="^",
                     linewidth=2,
                     label="Evening Peak",
-                    color="red",
+                    color=peak_colors[1],
                 )
                 ax2.plot(
                     years,
@@ -162,7 +167,7 @@ class LoadPatternCharts:
                     marker="v",
                     linewidth=2,
                     label="Midday Min",
-                    color="green",
+                    color=peak_colors[2],
                 )
                 ax2.set_title("Peak vs Midday Load", fontweight="bold")
                 ax2.set_ylabel("Load (GW)", fontweight="bold")
@@ -170,14 +175,20 @@ class LoadPatternCharts:
                 ax2.grid(True, alpha=0.3)
 
                 # Midday suppression
-                ax3.plot(years, duck_metrics_df["midday_suppression_pct"], marker="d", linewidth=2, color="purple")
+                ax3.plot(
+                    years,
+                    duck_metrics_df["midday_suppression_pct"],
+                    marker="d",
+                    linewidth=2,
+                    color=metric_colors[1],
+                )
                 ax3.set_title("Midday Demand Suppression", fontweight="bold")
                 ax3.set_ylabel("Suppression (%)", fontweight="bold")
                 ax3.set_xlabel("Year", fontweight="bold")
                 ax3.grid(True, alpha=0.3)
 
                 # Peak-to-trough ratio
-                ax4.plot(years, duck_metrics_df["peak_trough_ratio"], marker="h", linewidth=2, color="brown")
+                ax4.plot(years, duck_metrics_df["peak_trough_ratio"], marker="h", linewidth=2, color=metric_colors[2])
                 ax4.set_title("Peak-to-Trough Ratio", fontweight="bold")
                 ax4.set_ylabel("Ratio", fontweight="bold")
                 ax4.set_xlabel("Year", fontweight="bold")
@@ -185,13 +196,13 @@ class LoadPatternCharts:
 
                 fig.suptitle(f"Duck Curve Analysis - {region.upper()}", fontsize=16, fontweight="bold")
 
-                mplt.tight_layout()
+                plt.tight_layout()
 
                 # Save high-resolution image
                 output_path = Path(output_file)
                 output_path.parent.mkdir(parents=True, exist_ok=True)
-                mplt.savefig(output_path, dpi=300, bbox_inches="tight")
-                mplt.close()
+                plt.savefig(output_path, dpi=300, bbox_inches="tight")
+                plt.close()
 
                 print(f"📊 Duck curve analysis saved: {output_path}")
 
@@ -199,18 +210,18 @@ class LoadPatternCharts:
                 print("⚠ matplotlib not available, using terminal chart only")
 
         # Terminal chart - duck intensity
-        plt.clear_data()
-        plt.clear_color()
+        plt_term.clear_data()
+        plt_term.clear_color()
 
         years = duck_metrics_df["year"].tolist()
         intensity = duck_metrics_df["duck_intensity_pct"].tolist()
 
-        plt.plot(years, intensity, marker="hd")
-        plt.title(f"Duck Curve Intensity Evolution - {region.upper()}")
-        plt.xlabel("Year")
-        plt.ylabel("Duck Intensity (%)")
-        plt.grid(True)
-        plt.show()
+        plt_term.plot(years, intensity, marker="hd")
+        plt_term.title(f"Duck Curve Intensity Evolution - {region.upper()}")
+        plt_term.xlabel("Year")
+        plt_term.ylabel("Duck Intensity (%)")
+        plt_term.grid(True)
+        plt_term.show()
 
     @staticmethod
     def plot_peak_migration_heatmap(
@@ -229,7 +240,7 @@ class LoadPatternCharts:
             output_file: Optional file path for saving chart as image
         """
         # Pivot data
-        peaks_pivot = peaks_df.pivot(index="hour", columns="year", values="peak_load")
+        peaks_pivot = peaks_df.pivot_table(index="hour", columns="year", values="peak_load", aggfunc="mean")
 
         if reference_year is None:
             reference_year = peaks_pivot.columns.min()
@@ -245,10 +256,10 @@ class LoadPatternCharts:
         if output_file:
             # High-resolution matplotlib heatmap
             try:
-                import matplotlib.pyplot as mplt
+                import matplotlib.pyplot as plt
                 import seaborn as sns
 
-                fig, ax = mplt.subplots(figsize=(12, 8), dpi=300)
+                fig, ax = plt.subplots(figsize=(12, 8), dpi=300)
 
                 # Create heatmap
                 sns.heatmap(
@@ -274,13 +285,13 @@ class LoadPatternCharts:
                 hour_labels = [f"{h:02d}:00" if h % 3 == 0 else "" for h in range(24)]
                 ax.set_xticklabels(hour_labels)
 
-                mplt.tight_layout()
+                plt.tight_layout()
 
                 # Save high-resolution image
                 output_path = Path(output_file)
                 output_path.parent.mkdir(parents=True, exist_ok=True)
-                mplt.savefig(output_path, dpi=300, bbox_inches="tight")
-                mplt.close()
+                plt.savefig(output_path, dpi=300, bbox_inches="tight")
+                plt.close()
 
                 print(f"📊 Peak migration heatmap saved: {output_path}")
 
@@ -288,16 +299,16 @@ class LoadPatternCharts:
                 print("⚠ matplotlib/seaborn not available, using terminal display")
 
         # Terminal summary
-        plt.clear_data()
-        plt.clear_color()
+        plt_term.clear_data()
+        plt_term.clear_color()
 
         # Show average change by hour across all years
         avg_change = changes_df.mean(axis=1)
 
-        plt.plot(avg_change.index.tolist(), avg_change.tolist(), marker="hd")
-        plt.title(f"Average Peak Load Change by Hour - {region.upper()}\n(vs {reference_year})")
-        plt.xlabel("Hour of Day")
-        plt.ylabel("Average Change (%)")
-        plt.xticks(list(range(0, 24, 3)), [f"{h:02d}:00" for h in range(0, 24, 3)])
-        plt.grid(True)
-        plt.show()
+        plt_term.plot(avg_change.index.tolist(), avg_change.tolist(), marker="hd")
+        plt_term.title(f"Average Peak Load Change by Hour - {region.upper()}\n(vs {reference_year})")
+        plt_term.xlabel("Hour of Day")
+        plt_term.ylabel("Average Change (%)")
+        plt_term.xticks(list(range(0, 24, 3)), [f"{h:02d}:00" for h in range(0, 24, 3)])
+        plt_term.grid(True)
+        plt_term.show()
