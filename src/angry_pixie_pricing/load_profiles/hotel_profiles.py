@@ -63,14 +63,11 @@ class HotelFacilityMixin:
             if 8 <= hour < 20:
                 peak_hours = [10, 11, 15, 16, 17]  # Morning and afternoon peaks
                 return 0.9 if hour in peak_hours else 0.7
-            else:
-                return 0.3  # Filtration, heating minimum
-        else:
-            # Adult wellness: 6-22
-            if 6 <= hour < 22:
-                return 0.8
-            else:
-                return 0.3
+            return 0.3  # Filtration, heating minimum
+        # Adult wellness: 6-22
+        if 6 <= hour < 22:
+            return 0.8
+        return 0.3
 
     def get_activity_area_load(self, hour: int) -> float:
         """Activity area load (game rooms, entertainment).
@@ -112,15 +109,14 @@ class HotelFacilityMixin:
         """Common areas (lobby, corridors, reception)."""
         if 7 <= hour < 22:
             return 0.8  # Full lighting, HVAC
-        else:
-            return 0.4  # Reduced lighting, security
+        return 0.4  # Reduced lighting, security
 
 
 class KidsHotelProfile(ProfileTemplate, HotelFacilityMixin):
     """Load profile for kids-focused hotel with specialized facilities."""
 
     def __init__(
-        self, occupancy_rate: float = 0.7, facility_weights: dict[str, float] | None = None
+        self, occupancy_rate: float = 0.7, facility_weights: dict[str, float] | None = None,
     ):
         """Initialize kids hotel profile.
 
@@ -151,7 +147,7 @@ class KidsHotelProfile(ProfileTemplate, HotelFacilityMixin):
                 "spring": 1.0,  # School holidays
                 "summer": 1.2,  # Peak season, AC load
                 "autumn": 0.95,
-            }
+            },
         )
 
         # Different weekend pattern (higher occupancy)
@@ -220,7 +216,8 @@ class DayNightSplitProfile(ProfileTemplate):
 
         # Validate ratios
         if abs((day_consumption_ratio + night_consumption_ratio) - 1.0) > 0.01:
-            raise ValueError("Day and night ratios must sum to 1.0")
+            msg = "Day and night ratios must sum to 1.0"
+            raise ValueError(msg)
 
     def get_factor(self, timestamp: datetime) -> float:
         """Get load factor adjusted for day/night split."""

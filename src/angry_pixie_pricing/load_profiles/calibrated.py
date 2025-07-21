@@ -54,7 +54,7 @@ class CalibratedProfile(LoadProfile):
 
         # Generate template day profile
         template_profile = self.profile_template.generate_profile(
-            day_start, day_end, self.peak_kw, self.daily_kwh
+            day_start, day_end, self.peak_kw, self.daily_kwh,
         )
 
         # Apply day/night constraints to template if provided
@@ -179,15 +179,14 @@ class CalibratedProfile(LoadProfile):
         """Get weekly adjustment factor."""
         if timestamp.weekday() < 5:  # Weekday
             return 1.0
-        else:  # Weekend
-            # Hotels typically busier on weekends
-            return 1.1
+        # Weekend
+        # Hotels typically busier on weekends
+        return 1.1
 
     def get_daily_pattern(self) -> pd.DataFrame:
         """Get the calibrated daily pattern (for visualization)."""
         # Return first day of the profile
-        daily_data = self.data.iloc[:96]  # First 24 hours
-        return daily_data
+        return self.data.iloc[:96]  # First 24 hours
 
     def get_calibration_info(self) -> dict[str, Any]:
         """Get information about the calibration."""
@@ -213,7 +212,7 @@ class CalibratedProfile(LoadProfile):
                         f"{daily_day / (daily_day + daily_night) * 100:.1f}% / "
                         f"{daily_night / (daily_day + daily_night) * 100:.1f}%"
                     ),
-                }
+                },
             )
 
         return info

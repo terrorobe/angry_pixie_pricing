@@ -83,7 +83,7 @@ class HourlyPriceAnalyzer:
         total_by_hour = (
             df.groupby("hour").size().reindex(range(24), fill_value=1)
         )  # Avoid division by zero
-        hourly_stats["negative_price_pct"] = (negative_by_hour / total_by_hour * 100).values
+        hourly_stats["negative_price_pct"] = (negative_by_hour / total_by_hour * 100).to_numpy()
 
         return hourly_stats.fillna(0)
 
@@ -100,8 +100,8 @@ class HourlyPriceAnalyzer:
         if hourly_stats.empty:
             return {}
 
-        prices = hourly_stats["mean"].values
-        hours = hourly_stats["hour"].values
+        prices = hourly_stats["mean"].to_numpy()
+        hours = hourly_stats["hour"].to_numpy()
 
         # Find morning peak (6-10 AM)
         morning_mask = (hours >= 6) & (hours <= 10)
@@ -148,7 +148,7 @@ class HourlyPriceAnalyzer:
         }
 
     def compare_workday_vs_nonworkday(
-        self, analysis_results: dict[str, pd.DataFrame]
+        self, analysis_results: dict[str, pd.DataFrame],
     ) -> dict[str, any]:
         """
         Compare duck curve characteristics between workdays and non-workdays.

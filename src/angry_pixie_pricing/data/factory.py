@@ -16,7 +16,7 @@ class DataSourceFactory:
 
     @classmethod
     def create_data_source(
-        self, source_name: str = "default", cache_dir: str | None = None
+        cls, source_name: str = "default", cache_dir: str | None = None,
     ) -> PriceDataSource:
         """
         Create a data source instance.
@@ -31,11 +31,12 @@ class DataSourceFactory:
         Raises:
             ValueError: If source_name is not supported
         """
-        if source_name not in self.AVAILABLE_SOURCES:
-            available = ", ".join(self.AVAILABLE_SOURCES.keys())
-            raise ValueError(f"Unknown data source '{source_name}'. Available: {available}")
+        if source_name not in cls.AVAILABLE_SOURCES:
+            available = ", ".join(cls.AVAILABLE_SOURCES.keys())
+            msg = f"Unknown data source '{source_name}'. Available: {available}"
+            raise ValueError(msg)
 
-        source_class = self.AVAILABLE_SOURCES[source_name]
+        source_class = cls.AVAILABLE_SOURCES[source_name]
         return source_class(cache_dir=cache_dir)
 
     @classmethod

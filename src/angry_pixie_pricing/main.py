@@ -82,7 +82,7 @@ def chart(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"]
+            ctx.obj["data_source"], ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -92,7 +92,7 @@ def chart(
 
         click.echo(f"Retrieved {len(df)} hourly price points")
         click.echo(
-            f"Price range: {df['price'].min():.2f} - {df['price'].max():.2f} {df['unit'].iloc[0]}"
+            f"Price range: {df['price'].min():.2f} - {df['price'].max():.2f} {df['unit'].iloc[0]}",
         )
 
         # Generate charts based on chart_type and output format
@@ -101,7 +101,7 @@ def chart(
             if png:
                 # Auto-generate filename when using --png flag
                 output = generate_price_chart_filename(
-                    region, start_date_str, end_date_str, chart_type
+                    region, start_date_str, end_date_str, chart_type,
                 )
             elif not output.lower().endswith(".png"):
                 # Add .png extension if not present
@@ -110,36 +110,36 @@ def chart(
             try:
                 if chart_type == "line":
                     create_png_price_chart(
-                        df, region, output, width=width or 12, height=height or 6
+                        df, region, output, width=width or 12, height=height or 6,
                     )
                 elif chart_type == "hourly":
                     create_png_hourly_analysis_chart(
-                        df, region, output, width=width or 12, height=height or 6
+                        df, region, output, width=width or 12, height=height or 6,
                     )
                 elif chart_type == "hourly-workday":
                     create_png_hourly_workday_chart(
-                        df, region, output, width=width or 12, height=height or 6
+                        df, region, output, width=width or 12, height=height or 6,
                     )
                 elif chart_type == "all":
                     # Create multiple PNG files with smart names
                     line_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "line"
+                        region, start_date_str, end_date_str, "line",
                     )
                     hourly_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "hourly"
+                        region, start_date_str, end_date_str, "hourly",
                     )
                     workday_output = generate_price_chart_filename(
-                        region, start_date_str, end_date_str, "hourly-workday"
+                        region, start_date_str, end_date_str, "hourly-workday",
                     )
 
                     create_png_price_chart(
-                        df, region, line_output, width=width or 12, height=height or 6
+                        df, region, line_output, width=width or 12, height=height or 6,
                     )
                     create_png_hourly_analysis_chart(
-                        df, region, hourly_output, width=width or 12, height=height or 6
+                        df, region, hourly_output, width=width or 12, height=height or 6,
                     )
                     create_png_hourly_workday_chart(
-                        df, region, workday_output, width=width or 12, height=height or 6
+                        df, region, workday_output, width=width or 12, height=height or 6,
                     )
                 else:
                     click.echo(f"PNG output not supported for chart type: {chart_type}")
@@ -179,7 +179,7 @@ def chart(
 @click.option("--billing-data", help="Path to billing data JSON or use --peak-kw and --total-kwh")
 @click.option("--peak-kw", type=float, help="Peak power in kW (for billing reconstruction)")
 @click.option(
-    "--total-kwh", type=float, help="Total consumption in kWh (for model calibration period)"
+    "--total-kwh", type=float, help="Total consumption in kWh (for model calibration period)",
 )
 @click.option("--days", type=int, help="Billing period length in days (for model calibration)")
 @click.option(
@@ -194,7 +194,7 @@ def chart(
     help="Building profile type for reconstruction",
 )
 @click.option(
-    "--region", help="European region code (e.g., DE, FR, NL) - not needed with --profile-only"
+    "--region", help="European region code (e.g., DE, FR, NL) - not needed with --profile-only",
 )
 @click.option(
     "--start-date",
@@ -206,7 +206,7 @@ def chart(
 @click.option("--no-cache", is_flag=True, help="Skip cache and fetch fresh data")
 # Kids hotel specific options
 @click.option(
-    "--occupancy-rate", type=float, default=0.7, help="Hotel occupancy rate (0-1, default: 0.7)"
+    "--occupancy-rate", type=float, default=0.7, help="Hotel occupancy rate (0-1, default: 0.7)",
 )
 @click.option(
     "--kitchen-weight",
@@ -215,7 +215,7 @@ def chart(
     help="Kitchen/restaurant load weight (default: 0.2)",
 )
 @click.option(
-    "--wellness-weight", type=float, default=0.25, help="Pool/wellness load weight (default: 0.25)"
+    "--wellness-weight", type=float, default=0.25, help="Pool/wellness load weight (default: 0.25)",
 )
 @click.option(
     "--activity-weight",
@@ -224,16 +224,16 @@ def chart(
     help="Activity/game areas load weight (default: 0.15)",
 )
 @click.option(
-    "--rooms-weight", type=float, default=0.25, help="Guest rooms load weight (default: 0.25)"
+    "--rooms-weight", type=float, default=0.25, help="Guest rooms load weight (default: 0.25)",
 )
 @click.option(
-    "--common-weight", type=float, default=0.15, help="Common areas load weight (default: 0.15)"
+    "--common-weight", type=float, default=0.15, help="Common areas load weight (default: 0.15)",
 )
 @click.option(
-    "--day-kwh", type=float, help="Day consumption kWh (06:00-22:00) for calibration period"
+    "--day-kwh", type=float, help="Day consumption kWh (06:00-22:00) for calibration period",
 )
 @click.option(
-    "--night-kwh", type=float, help="Night consumption kWh (22:00-06:00) for calibration period"
+    "--night-kwh", type=float, help="Night consumption kWh (22:00-06:00) for calibration period",
 )
 @click.option("--show-profile", is_flag=True, help="Display load profile chart in terminal")
 @click.option("--profile-chart", help="Save load profile chart to PNG file")
@@ -299,9 +299,11 @@ def calculate(
         else:
             # Parse dates with flexible format support
             if not start_date:
-                raise ValueError("--start-date is required unless using --profile-only")
+                msg = "--start-date is required unless using --profile-only"
+                raise ValueError(msg)
             if not region:
-                raise ValueError("--region is required unless using --profile-only")
+                msg = "--region is required unless using --profile-only"
+                raise ValueError(msg)
             start_dt, end_dt = parse_date_range(start_date, end_date)
 
             # Constrain end date to today if in the future
@@ -330,21 +332,23 @@ def calculate(
             elif total_kwh and days:
                 daily_consumption = total_kwh / days
                 click.echo(
-                    f"Calculated daily consumption: {total_kwh:.1f} kWh ÷ {days} days = {daily_consumption:.1f} kWh/day"
+                    f"Calculated daily consumption: {total_kwh:.1f} kWh ÷ {days} days = {daily_consumption:.1f} kWh/day",
                 )
             elif total_kwh:
                 # Assume total_kwh is daily if no days specified
                 daily_consumption = total_kwh
                 click.echo(
-                    f"Assuming daily consumption: {total_kwh:.1f} kWh/day (use --days if this is a monthly total)"
+                    f"Assuming daily consumption: {total_kwh:.1f} kWh/day (use --days if this is a monthly total)",
                 )
             else:
+                msg = "Must provide either --daily-kwh or --total-kwh (with optional --days)"
                 raise ValueError(
-                    "Must provide either --daily-kwh or --total-kwh (with optional --days)"
+                    msg,
                 )
 
             if not peak_kw:
-                raise ValueError("Must provide --peak-kw for load profile calibration")
+                msg = "Must provide --peak-kw for load profile calibration"
+                raise ValueError(msg)
 
             # Create profile template
             if profile_type == "kids_hotel":
@@ -358,7 +362,7 @@ def calculate(
                 )
                 if abs(total_weight - 1.0) > 0.05:
                     click.echo(
-                        f"Warning: Facility weights sum to {total_weight:.2f}, should be close to 1.0"
+                        f"Warning: Facility weights sum to {total_weight:.2f}, should be close to 1.0",
                     )
 
                 facility_weights = {
@@ -370,13 +374,13 @@ def calculate(
                 }
 
                 profile_template = KidsHotelProfile(
-                    occupancy_rate=occupancy_rate, facility_weights=facility_weights
+                    occupancy_rate=occupancy_rate, facility_weights=facility_weights,
                 )
 
                 click.echo(f"Kids hotel profile: {occupancy_rate:.0%} occupancy")
                 click.echo(
                     f"Facility weights: Kitchen {kitchen_weight:.0%}, Pool {wellness_weight:.0%}, "
-                    f"Activities {activity_weight:.0%}, Rooms {rooms_weight:.0%}, Common {common_weight:.0%}"
+                    f"Activities {activity_weight:.0%}, Rooms {rooms_weight:.0%}, Common {common_weight:.0%}",
                 )
             else:
                 # Use standard profile types
@@ -399,7 +403,7 @@ def calculate(
 
                 day_night_split = (daily_day_kwh, daily_night_kwh)
                 click.echo(
-                    f"Day/night split: {daily_day_kwh:.1f} kWh day, {daily_night_kwh:.1f} kWh night (daily)"
+                    f"Day/night split: {daily_day_kwh:.1f} kWh day, {daily_night_kwh:.1f} kWh night (daily)",
                 )
 
                 # Verify split matches total
@@ -407,7 +411,7 @@ def calculate(
                 if abs(split_total - daily_consumption) > 0.1:
                     click.echo(
                         f"Warning: Day/night split ({split_total:.1f} kWh) doesn't match "
-                        f"daily total ({daily_consumption:.1f} kWh)"
+                        f"daily total ({daily_consumption:.1f} kWh)",
                     )
 
             # Create calibrated profile
@@ -427,11 +431,12 @@ def calculate(
                 click.echo(f"Day/night ratio: {calibration['day_night_ratio']}")
             click.echo(f"Calculating for {calibration['calculation_period_days']} days")
             click.echo(
-                f"Target total consumption: {calibration['total_consumption_target']:.1f} kWh"
+                f"Target total consumption: {calibration['total_consumption_target']:.1f} kWh",
             )
 
         else:
-            raise ValueError("Either --usage-data or billing parameters must be provided")
+            msg = "Either --usage-data or billing parameters must be provided"
+            raise ValueError(msg)
 
         # Profile-only mode - skip cost calculations
         if profile_only:
@@ -579,7 +584,7 @@ def _display_load_profile(load_profile, show_terminal: bool, save_png: str | Non
 
         # Show facility breakdown for kids hotel
         if hasattr(load_profile, "template") and hasattr(
-            load_profile.template, "get_kitchen_load_factor"
+            load_profile.template, "get_kitchen_load_factor",
         ):
             _show_facility_breakdown(load_profile.template, stats["peak_power_kw"])
 
@@ -615,20 +620,20 @@ def _show_facility_breakdown(template, peak_power):
         common_load = template.get_common_area_load(peak_hour) * weights["common"] * peak_power
 
         click.echo(
-            f"Kitchen/Restaurant: {kitchen_load:.1f} kW ({kitchen_load / peak_power * 100:.0f}%)"
+            f"Kitchen/Restaurant: {kitchen_load:.1f} kW ({kitchen_load / peak_power * 100:.0f}%)",
         )
         click.echo(
-            f"Pool/Wellness:      {wellness_load:.1f} kW ({wellness_load / peak_power * 100:.0f}%)"
+            f"Pool/Wellness:      {wellness_load:.1f} kW ({wellness_load / peak_power * 100:.0f}%)",
         )
         click.echo(
-            f"Activities:         {activity_load:.1f} kW ({activity_load / peak_power * 100:.0f}%)"
+            f"Activities:         {activity_load:.1f} kW ({activity_load / peak_power * 100:.0f}%)",
         )
         click.echo(f"Guest Rooms:        {room_load:.1f} kW ({room_load / peak_power * 100:.0f}%)")
         click.echo(
-            f"Common Areas:       {common_load:.1f} kW ({common_load / peak_power * 100:.0f}%)"
+            f"Common Areas:       {common_load:.1f} kW ({common_load / peak_power * 100:.0f}%)",
         )
         click.echo(
-            f"Total:              {kitchen_load + wellness_load + activity_load + room_load + common_load:.1f} kW"
+            f"Total:              {kitchen_load + wellness_load + activity_load + room_load + common_load:.1f} kW",
         )
 
 
@@ -753,13 +758,13 @@ def _display_monthly_results(
         click.echo(f"Period: {start_dt.strftime('%B %Y')}")
         click.echo(f"Consumption:      {total_kwh:>9,.0f} kWh")
         click.echo(
-            f"Spot market:      €{spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)"
+            f"Spot market:      €{spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)",
         )
         if handling_fee > 0:
             click.echo(f"Handling fees:    €{handling_cost:>8.2f}  (€{handling_fee:.4f}/kWh)")
             click.echo(f"{'─' * 35}")
             click.echo(
-                f"Total cost:       €{total_cost:>8.2f}  (€{total_cost / total_kwh:.4f}/kWh)"
+                f"Total cost:       €{total_cost:>8.2f}  (€{total_cost / total_kwh:.4f}/kWh)",
             )
 
         click.echo("\n=== Price Statistics ===")
@@ -767,10 +772,10 @@ def _display_monthly_results(
         if handling_fee > 0:
             click.echo(f"Handling fee:       €{handling_fee:.4f}/kWh")
             click.echo(
-                f"Total average:      €{results['weighted_avg_price_eur_kwh'] + handling_fee:.4f}/kWh"
+                f"Total average:      €{results['weighted_avg_price_eur_kwh'] + handling_fee:.4f}/kWh",
             )
         click.echo(
-            f"Min/Max spot:       €{results['min_price_eur_kwh']:.4f} - €{results['max_price_eur_kwh']:.4f}/kWh"
+            f"Min/Max spot:       €{results['min_price_eur_kwh']:.4f} - €{results['max_price_eur_kwh']:.4f}/kWh",
         )
 
     else:
@@ -801,11 +806,11 @@ def _display_monthly_results(
                 total_price = total_cost / consumption if consumption > 0 else 0
                 click.echo(
                     f"{month_name:9} │ {consumption:6.0f} │   {spot_price:.4f}   │ {handling_fee:.4f} │   "
-                    f"{total_price:.4f}   │  {total_cost:6.2f}"
+                    f"{total_price:.4f}   │  {total_cost:6.2f}",
                 )
             else:
                 click.echo(
-                    f"{month_name:9} │ {consumption:6.0f} │   {spot_price:.4f}   │  {spot_cost:6.2f}"
+                    f"{month_name:9} │ {consumption:6.0f} │   {spot_price:.4f}   │  {spot_cost:6.2f}",
                 )
 
         # Overall summary
@@ -817,18 +822,18 @@ def _display_monthly_results(
         click.echo("\n=== Period Total ===")
         click.echo(f"Consumption:      {total_kwh:>9,.0f} kWh")
         click.echo(
-            f"Spot market:      €{total_spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)"
+            f"Spot market:      €{total_spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)",
         )
         if handling_fee > 0:
             click.echo(f"Handling fees:    €{total_handling_cost:>8.2f}  (€{handling_fee:.4f}/kWh)")
             click.echo(f"{'─' * 35}")
             click.echo(
-                f"Total cost:       €{total_all_cost:>8.2f}  (€{total_all_cost / total_kwh:.4f}/kWh)"
+                f"Total cost:       €{total_all_cost:>8.2f}  (€{total_all_cost / total_kwh:.4f}/kWh)",
             )
         else:
             click.echo(f"{'─' * 35}")
             click.echo(
-                f"Total cost:       €{total_spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)"
+                f"Total cost:       €{total_spot_cost:>8.2f}  (€{results['weighted_avg_price_eur_kwh']:.4f}/kWh)",
             )
 
     # Generate cost chart if requested
@@ -874,7 +879,7 @@ def _save_cost_chart(
         spot_prices = [
             cost / consumption if consumption > 0 else 0
             for cost, consumption in zip(
-                monthly_summary["energy_cost_eur"], monthly_summary["energy_kwh"], strict=False
+                monthly_summary["energy_cost_eur"], monthly_summary["energy_kwh"], strict=False,
             )
         ]
         total_prices = [spot_price + handling_fee for spot_price in spot_prices]
@@ -1024,7 +1029,7 @@ def duck_factor(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"]
+            ctx.obj["data_source"], ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -1060,7 +1065,7 @@ def duck_factor(
                 if chart_type == "time-series":
                     if png:
                         output = generate_duck_factor_filename(
-                            region, start_date_str, end_date_str, window_days, "timeseries"
+                            region, start_date_str, end_date_str, window_days, "timeseries",
                         )
                     elif not output.lower().endswith(".png"):
                         output += ".png"
@@ -1075,12 +1080,12 @@ def duck_factor(
                 elif chart_type == "seasonal":
                     if png:
                         output = generate_duck_factor_filename(
-                            region, start_date_str, end_date_str, window_days, "seasonal"
+                            region, start_date_str, end_date_str, window_days, "seasonal",
                         )
                     elif not output.lower().endswith(".png"):
                         output += ".png"
                     create_png_seasonal_duck_chart(
-                        seasonal_data, region, output, width=width or 12, height=height or 8
+                        seasonal_data, region, output, width=width or 12, height=height or 8,
                     )
                 elif chart_type == "multi-window":
                     # Create multiple window analysis with smart filenames
@@ -1090,7 +1095,7 @@ def duck_factor(
                     multi_results = analyzer.multi_window_analysis(df, [7, 30, 90], step_days)
 
                     window_filenames = get_multi_window_filenames(
-                        region, start_date_str, end_date_str, [7, 30, 90]
+                        region, start_date_str, end_date_str, [7, 30, 90],
                     )
 
                     for window_key, window_df in multi_results.items():
@@ -1106,10 +1111,10 @@ def duck_factor(
                 elif chart_type == "all":
                     # Create all chart types with smart filenames
                     timeseries_output = generate_duck_factor_filename(
-                        region, start_date_str, end_date_str, window_days, "timeseries"
+                        region, start_date_str, end_date_str, window_days, "timeseries",
                     )
                     seasonal_output = generate_duck_factor_filename(
-                        region, start_date_str, end_date_str, window_days, "seasonal"
+                        region, start_date_str, end_date_str, window_days, "seasonal",
                     )
 
                     create_png_duck_factor_chart(
@@ -1136,7 +1141,7 @@ def duck_factor(
             # Terminal output mode (default)
             if chart_type == "time-series" or chart_type == "all":
                 create_terminal_duck_factor_chart(
-                    duck_factors, region, window_days, width=width, height=height
+                    duck_factors, region, window_days, width=width, height=height,
                 )
 
             # Additional terminal analysis summaries for other chart types
@@ -1160,15 +1165,14 @@ def _parse_time_period(period_str: str) -> int:
 
     if period_str.endswith("d"):
         return int(period_str[:-1])
-    elif period_str.endswith("w"):
+    if period_str.endswith("w"):
         return int(period_str[:-1]) * 7
-    elif period_str.endswith("m"):
+    if period_str.endswith("m"):
         return int(period_str[:-1]) * 30  # Approximate
-    elif period_str.endswith("y"):
+    if period_str.endswith("y"):
         return int(period_str[:-1]) * 365  # Approximate
-    else:
-        # Assume it's just a number of days
-        return int(period_str)
+    # Assume it's just a number of days
+    return int(period_str)
 
 
 def _display_duck_factor_summary(duck_factors, trends, seasonal_data, yoy_data):
@@ -1223,7 +1227,7 @@ def _display_seasonal_analysis(seasonal_data, region):
     seasonal_df = seasonal_data["seasonal_patterns"]
     for _, row in seasonal_df.iterrows():
         click.echo(
-            f"{row['season']:<8}: {row['mean']:.3f} ±{row['std']:.3f} ({row['count']} samples)"
+            f"{row['season']:<8}: {row['mean']:.3f} ±{row['std']:.3f} ({row['count']} samples)",
         )
 
     if "peak_season" in seasonal_data:
@@ -1283,7 +1287,7 @@ def negative_pricing(
 
         # Create data source
         data_source = DataSourceFactory.create_data_source(
-            ctx.obj["data_source"], ctx.obj["cache_dir"]
+            ctx.obj["data_source"], ctx.obj["cache_dir"],
         )
 
         click.echo(f"Fetching price data for {region} from {date_description}...")
@@ -1386,7 +1390,7 @@ def negative_pricing(
             else:
                 # Terminal output mode (default)
                 create_terminal_negative_pricing_chart(
-                    df, region, width=width, height=height, near_zero_threshold=threshold
+                    df, region, width=width, height=height, near_zero_threshold=threshold,
                 )
 
     except ValueError as e:
@@ -1405,10 +1409,10 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
 
     # Overall statistics
     click.echo(
-        f"Total negative hours: {metrics.negative_hours} ({metrics.negative_percentage:.1f}%)"
+        f"Total negative hours: {metrics.negative_hours} ({metrics.negative_percentage:.1f}%)",
     )
     click.echo(
-        f"Total near-zero hours: {metrics.near_zero_hours} ({metrics.near_zero_percentage:.1f}%)"
+        f"Total near-zero hours: {metrics.near_zero_hours} ({metrics.near_zero_percentage:.1f}%)",
     )
     click.echo(f"Average negative hours per day: {metrics.avg_hours_per_day:.1f}")
     click.echo(f"Maximum consecutive negative hours: {metrics.max_consecutive_hours}")
@@ -1421,7 +1425,7 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         )
         peak_percentage = metrics.hourly_breakdown[peak_hour]["negative_percentage"]
         click.echo(
-            f"Peak negative pricing hour: {peak_hour}:00 ({peak_percentage:.1f}% of the time)"
+            f"Peak negative pricing hour: {peak_hour}:00 ({peak_percentage:.1f}% of the time)",
         )
 
     # Monthly insights
@@ -1451,10 +1455,10 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         ]
 
         click.echo(
-            f"Best month for negative pricing: {month_names[best_month[0]]} ({best_month[1]:.1f} hours/day)"
+            f"Best month for negative pricing: {month_names[best_month[0]]} ({best_month[1]:.1f} hours/day)",
         )
         click.echo(
-            f"Worst month for negative pricing: {month_names[worst_month[0]]} ({worst_month[1]:.1f} hours/day)"
+            f"Worst month for negative pricing: {month_names[worst_month[0]]} ({worst_month[1]:.1f} hours/day)",
         )
 
     # Solar potential analysis
@@ -1463,7 +1467,7 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         click.echo("\nSOLAR POTENTIAL ANALYSIS (based on approximate solar irradiation data):")
         click.echo(f"Current average: {yearly['avg_current_hours_per_day']:.1f} hours/day")
         click.echo(
-            f"Theoretical maximum: {yearly['avg_theoretical_max_hours_per_day']:.1f} hours/day"
+            f"Theoretical maximum: {yearly['avg_theoretical_max_hours_per_day']:.1f} hours/day",
         )
         click.echo(f"Overall progress: {yearly['overall_progress_percentage']:.1f}%")
 
@@ -1472,7 +1476,7 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         )
         click.echo(f"Remaining potential: {remaining:.1f} hours/day")
         click.echo(
-            "NOTE: Solar potential estimates based on EU PVGIS, Global Solar Atlas, and Copernicus data"
+            "NOTE: Solar potential estimates based on EU PVGIS, Global Solar Atlas, and Copernicus data",
         )
 
     # Regional insights
@@ -1500,7 +1504,7 @@ def _display_negative_pricing_summary(metrics, seasonal_data, region):
         if not np.isnan(summer_avg) and not np.isnan(winter_avg):
             seasonal_ratio = summer_avg / winter_avg if winter_avg > 0 else float("inf")
             click.echo(
-                f"Summer vs Winter ratio: {seasonal_ratio:.1f}x (Summer: {summer_avg:.1f}h, Winter: {winter_avg:.1f}h)"
+                f"Summer vs Winter ratio: {seasonal_ratio:.1f}x (Summer: {summer_avg:.1f}h, Winter: {winter_avg:.1f}h)",
             )
 
     click.echo("=" * 70)

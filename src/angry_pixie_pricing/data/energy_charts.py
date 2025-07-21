@@ -26,7 +26,7 @@ class EnergyChartsDataSource(PriceDataSource):
     }
 
     def _fetch_spot_prices(
-        self, region: str, start_date: datetime, end_date: datetime
+        self, region: str, start_date: datetime, end_date: datetime,
     ) -> pd.DataFrame:
         """
         Fetch hourly spot prices from energy-charts.info API.
@@ -57,8 +57,9 @@ class EnergyChartsDataSource(PriceDataSource):
 
             # Check if data is available
             if not data.get("unix_seconds") or not data.get("price"):
+                msg = f"No price data available for {region} ({bzn}) from {start_str} to {end_str}"
                 raise ValueError(
-                    f"No price data available for {region} ({bzn}) from {start_str} to {end_str}"
+                    msg,
                 )
 
             # Convert to DataFrame
@@ -67,18 +68,19 @@ class EnergyChartsDataSource(PriceDataSource):
                     "timestamp": pd.to_datetime(data["unix_seconds"], unit="s"),
                     "price": data["price"],
                     "unit": data.get("unit", "EUR/MWh"),
-                }
+                },
             )
 
             # Sort by timestamp
-            df = df.sort_values("timestamp").reset_index(drop=True)
+            return df.sort_values("timestamp").reset_index(drop=True)
 
-            return df
 
         except requests.RequestException as e:
-            raise ConnectionError(f"Failed to fetch data from energy-charts.info: {e}") from e
+            msg = f"Failed to fetch data from energy-charts.info: {e}"
+            raise ConnectionError(msg) from e
         except (KeyError, ValueError) as e:
-            raise ValueError(f"Invalid response from energy-charts.info API: {e}") from e
+            msg = f"Invalid response from energy-charts.info API: {e}"
+            raise ValueError(msg) from e
 
     def get_supported_regions(self) -> list[str]:
         """

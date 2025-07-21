@@ -111,7 +111,7 @@ class ProfileTemplate:
                 power_values *= scale_factor
 
         # Create DataFrame
-        df = pd.DataFrame(
+        return pd.DataFrame(
             {
                 "power_kw": power_values,
                 "energy_kwh": power_values * 0.25,  # 15 min intervals
@@ -119,7 +119,6 @@ class ProfileTemplate:
             index=timestamps,
         )
 
-        return df
 
 
 class ResidentialProfile(ProfileTemplate):
@@ -155,7 +154,7 @@ class ResidentialProfile(ProfileTemplate):
                 21: 0.7,
                 22: 0.5,
                 23: 0.4,
-            }
+            },
         )
 
         self.set_weekly_pattern(weekday=1.0, weekend=1.1)
@@ -196,7 +195,7 @@ class CommercialProfile(ProfileTemplate):
                 21: 0.35,
                 22: 0.3,
                 23: 0.3,
-            }
+            },
         )
 
         self.set_weekly_pattern(weekday=1.0, weekend=0.3)
@@ -207,7 +206,7 @@ class CommercialProfile(ProfileTemplate):
                 "spring": 0.95,
                 "summer": 1.2,  # AC load
                 "autumn": 0.95,
-            }
+            },
         )
 
 
@@ -244,7 +243,7 @@ class IndustrialProfile(ProfileTemplate):
                 21: 0.4,
                 22: 0.4,
                 23: 0.4,
-            }
+            },
         )
 
         self.set_weekly_pattern(weekday=1.0, weekend=0.4)

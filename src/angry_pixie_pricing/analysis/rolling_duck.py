@@ -26,7 +26,7 @@ class RollingDuckAnalyzer:
         self.hourly_analyzer = HourlyPriceAnalyzer(region)
 
     def calculate_rolling_duck_factor(
-        self, df: pd.DataFrame, window_days: int = 30, step_days: int = 7
+        self, df: pd.DataFrame, window_days: int = 30, step_days: int = 7,
     ) -> pd.DataFrame:
         """
         Calculate rolling duck factor over time with configurable windows.
@@ -72,7 +72,7 @@ class RollingDuckAnalyzer:
                         "duck_factor": duck_factor,
                         "window_days": window_days,
                         "data_points": len(window_df),
-                    }
+                    },
                 )
 
             current_date += timedelta(days=step_days)
@@ -80,7 +80,7 @@ class RollingDuckAnalyzer:
         return pd.DataFrame(results)
 
     def multi_window_analysis(
-        self, df: pd.DataFrame, windows: list[int] | None = None, step_days: int = 7
+        self, df: pd.DataFrame, windows: list[int] | None = None, step_days: int = 7,
     ) -> dict[str, pd.DataFrame]:
         """
         Calculate duck factors for multiple window sizes.
@@ -158,7 +158,7 @@ class RollingDuckAnalyzer:
         }
 
     def detect_trends(
-        self, duck_factors_df: pd.DataFrame, min_data_points: int = 20
+        self, duck_factors_df: pd.DataFrame, min_data_points: int = 20,
     ) -> dict[str, any]:
         """
         Detect long-term trends in duck factor evolution.
@@ -175,7 +175,7 @@ class RollingDuckAnalyzer:
                 "error": (
                     f"Insufficient data points for trend analysis "
                     f"(need {min_data_points}, got {len(duck_factors_df)})"
-                )
+                ),
             }
 
         df = duck_factors_df.copy()
@@ -266,7 +266,7 @@ class RollingDuckAnalyzer:
                             "max_yoy_change": month_yoy_change.max(),
                             "min_yoy_change": month_yoy_change.min(),
                             "years_compared": len(month_yoy_change),
-                        }
+                        },
                     )
 
         monthly_yoy_df = pd.DataFrame(monthly_yoy)
@@ -287,15 +287,14 @@ class RollingDuckAnalyzer:
         """Map month number to season name."""
         if month in [12, 1, 2]:
             return "Winter"
-        elif month in [3, 4, 5]:
+        if month in [3, 4, 5]:
             return "Spring"
-        elif month in [6, 7, 8]:
+        if month in [6, 7, 8]:
             return "Summer"
-        else:
-            return "Fall"
+        return "Fall"
 
     def _find_inflection_points(
-        self, df: pd.DataFrame, sensitivity: float = 0.1
+        self, df: pd.DataFrame, sensitivity: float = 0.1,
     ) -> list[dict[str, any]]:
         """Find significant changes in duck factor trends."""
         if len(df) < 10:
@@ -328,7 +327,7 @@ class RollingDuckAnalyzer:
                             "trend_change": change,
                             "trend_before": trends[i - 1],
                             "trend_after": trends[i],
-                        }
+                        },
                     )
 
         return inflection_points
@@ -337,22 +336,21 @@ class RollingDuckAnalyzer:
         """Classify trend based on slope and R-squared."""
         if r_squared < 0.3:
             return "No Clear Trend"
-        elif abs(slope) < 0.01:
+        if abs(slope) < 0.01:
             return "Stable"
-        elif slope > 0.05:
+        if slope > 0.05:
             return "Strong Upward"
-        elif slope > 0.01:
+        if slope > 0.01:
             return "Moderate Upward"
-        elif slope < -0.05:
+        if slope < -0.05:
             return "Strong Downward"
-        elif slope < -0.01:
+        if slope < -0.01:
             return "Moderate Downward"
-        else:
-            return "Weak Trend"
+        return "Weak Trend"
 
 
 def analyze_rolling_duck_patterns(
-    df: pd.DataFrame, region: str, window_days: int = 30, step_days: int = 7
+    df: pd.DataFrame, region: str, window_days: int = 30, step_days: int = 7,
 ) -> dict[str, any]:
     """
     Convenience function for comprehensive rolling duck analysis.

@@ -24,11 +24,21 @@ angry-pixie = "angry_pixie_pricing.main:cli"
 
 [tool.uv]
 dev-dependencies = [
+    # Testing
     "pytest>=8.3.0",
-    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.12.0",
+    
+    # Code Quality
     "ruff>=0.6.0",
     "mypy>=1.11.0",
+    
+    # Development
     "ipython>=8.26.0",
+    "rich>=13.8.0",            # Better terminal output
+    
+    # Security
+    "bandit>=1.7.10",          # Security linting
+    "safety>=3.2.0",           # Dependency vulnerability scanning
 ]
 
 [build-system]
@@ -56,8 +66,44 @@ select = [
     "SIM",    # flake8-simplify
     "TID",    # flake8-tidy-imports
     "RUF",    # Ruff-specific rules
+    
+    # Security & Safety
+    "S",      # flake8-bandit (security)
+    "BLE",    # flake8-blind-except (catch Exception)
+    
+    # Code Quality
+    "A",      # flake8-builtins (shadowing builtins)
+    "COM",    # flake8-commas (trailing commas)
+    "C90",    # mccabe (complexity)
+    "DTZ",    # flake8-datetimez (timezone safety)
+    "EM",     # flake8-errmsg (error message formatting)
+    "ICN",    # flake8-import-conventions (import naming)
+    "N",      # pep8-naming (naming conventions)
+    "PIE",    # flake8-pie (misc improvements)
+    "PT",     # flake8-pytest-style (pytest best practices)
+    "Q",      # flake8-quotes (quote consistency)
+    "RSE",    # flake8-raise (raise statement improvements)
+    "RET",    # flake8-return (return statement improvements)
+    "TCH",    # flake8-type-checking (TYPE_CHECKING imports)
+    "T20",    # flake8-print (no print statements in production)
+    "PD",     # pandas-vet (pandas best practices)
 ]
-ignore = []
+ignore = [
+    # Allow print statements (we use them for CLI output)
+    "T201",   # print statements
+    
+    # Allow some complexity for data analysis code
+    "C901",   # complex-structure (>10 branches)
+    
+    # Allow some pandas patterns
+    "PD901",  # pandas-df-variable-name (allow 'df')
+    
+    # Allow implicit string concatenation in multiline contexts
+    "ISC001", # single-line-implicit-string-concatenation
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow assert statements in tests
 
 [tool.mypy]
 python_version = "3.12"
@@ -65,6 +111,8 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 strict = true
+show_error_codes = true
+warn_unreachable = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

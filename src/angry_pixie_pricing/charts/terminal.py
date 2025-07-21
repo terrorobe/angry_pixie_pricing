@@ -68,7 +68,8 @@ def create_png_price_chart(
         height: Figure height in inches
     """
     if not MATPLOTLIB_AVAILABLE:
-        raise ImportError("matplotlib is required for PNG chart generation")
+        msg = "matplotlib is required for PNG chart generation"
+        raise ImportError(msg)
 
     if df.empty:
         print(f"No data available for {region}")
@@ -125,7 +126,8 @@ def create_png_hourly_analysis_chart(
         height: Figure height in inches
     """
     if not MATPLOTLIB_AVAILABLE:
-        raise ImportError("matplotlib is required for PNG chart generation")
+        msg = "matplotlib is required for PNG chart generation"
+        raise ImportError(msg)
 
     if df.empty:
         print(f"No data available for {region}")
@@ -225,7 +227,8 @@ def create_png_hourly_workday_chart(
         height: Figure height in inches
     """
     if not MATPLOTLIB_AVAILABLE:
-        raise ImportError("matplotlib is required for PNG chart generation")
+        msg = "matplotlib is required for PNG chart generation"
+        raise ImportError(msg)
 
     if df.empty:
         print(f"No data available for {region}")
@@ -364,8 +367,8 @@ def create_terminal_price_summary(df: pd.DataFrame, region: str) -> None:
 
     print(f"\n📊 Price Statistics for {region}")
     print("=" * 40)
-    start_time = df['timestamp'].min().strftime('%Y-%m-%d %H:%M')
-    end_time = df['timestamp'].max().strftime('%Y-%m-%d %H:%M')
+    start_time = df["timestamp"].min().strftime("%Y-%m-%d %H:%M")
+    end_time = df["timestamp"].max().strftime("%Y-%m-%d %H:%M")
     print(f"Period: {start_time} to {end_time}")
     print(f"Data points: {len(df)}")
     print()
@@ -380,7 +383,7 @@ def create_terminal_price_summary(df: pd.DataFrame, region: str) -> None:
     negative_prices = df[df["price"] < 0]
     if not negative_prices.empty:
         print(
-            f"⚠️  Negative prices: {len(negative_prices)} hours ({len(negative_prices) / len(df) * 100:.1f}%)"
+            f"⚠️  Negative prices: {len(negative_prices)} hours ({len(negative_prices) / len(df) * 100:.1f}%)",
         )
         print(f"   Lowest: {negative_prices['price'].min():.2f} {unit}")
         print()
@@ -390,10 +393,10 @@ def create_terminal_price_summary(df: pd.DataFrame, region: str) -> None:
     low_price = df.loc[df["price"].idxmin()]
 
     print(
-        f"🔴 Highest price: {peak_price['price']:.2f} {unit} at {peak_price['timestamp'].strftime('%Y-%m-%d %H:%M')}"
+        f"🔴 Highest price: {peak_price['price']:.2f} {unit} at {peak_price['timestamp'].strftime('%Y-%m-%d %H:%M')}",
     )
     print(
-        f"🟢 Lowest price:  {low_price['price']:.2f} {unit} at {low_price['timestamp'].strftime('%Y-%m-%d %H:%M')}"
+        f"🟢 Lowest price:  {low_price['price']:.2f} {unit} at {low_price['timestamp'].strftime('%Y-%m-%d %H:%M')}",
     )
     print()
 
@@ -521,13 +524,13 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         features = comparison["workday_features"]
         print("📊 WORKDAY PATTERN")
         print(
-            f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}"  # noqa: E501
+            f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(
-            f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}"  # noqa: E501
+            f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(
-            f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}"  # noqa: E501
+            f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
         print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
@@ -542,13 +545,13 @@ def create_hourly_analysis_chart(df: pd.DataFrame, region: str) -> None:
         features = comparison["non_workday_features"]
         print("\n📊 WEEKEND/HOLIDAY PATTERN")
         print(
-            f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}"  # noqa: E501
+            f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(
-            f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}"  # noqa: E501
+            f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(
-            f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}"  # noqa: E501
+            f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}",  # noqa: E501
         )
         print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
         print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
@@ -617,13 +620,13 @@ def create_hourly_workday_chart(df: pd.DataFrame, region: str) -> None:
     print(f"\n🦆 Workday Duck Curve Features for {region}")
     print("=" * 40)
     print(
-        f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}"  # noqa: E501
+        f"Morning peak:   {features.get('morning_peak_hour', 'N/A')}:00 at {features.get('morning_peak_price', 0):.1f} {unit}",  # noqa: E501
     )
     print(
-        f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}"  # noqa: E501
+        f"Midday minimum: {features.get('midday_min_hour', 'N/A')}:00 at {features.get('midday_min_price', 0):.1f} {unit}",  # noqa: E501
     )
     print(
-        f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}"  # noqa: E501
+        f"Evening peak:   {features.get('evening_peak_hour', 'N/A')}:00 at {features.get('evening_peak_price', 0):.1f} {unit}",  # noqa: E501
     )
     print(f"Duck depth:     {features.get('duck_depth', 0):.1f} {unit}")
     print(f"Evening ramp:   {features.get('evening_ramp', 0):.1f} {unit}")
@@ -722,8 +725,9 @@ def create_png_duck_factor_chart(
         height: Figure height in inches
     """
     if not MATPLOTLIB_AVAILABLE:
+        msg = "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
         raise ImportError(
-            "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
+            msg,
         )
 
     if duck_factors_df.empty:
@@ -786,7 +790,7 @@ def create_png_duck_factor_chart(
 
 
 def create_png_seasonal_duck_chart(
-    seasonal_data: dict[str, Any], region: str, output_path: str, width: int = 12, height: int = 8
+    seasonal_data: dict[str, Any], region: str, output_path: str, width: int = 12, height: int = 8,
 ) -> None:
     """
     Create a PNG chart showing seasonal duck factor patterns.
@@ -799,8 +803,9 @@ def create_png_seasonal_duck_chart(
         height: Figure height in inches
     """
     if not MATPLOTLIB_AVAILABLE:
+        msg = "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
         raise ImportError(
-            "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
+            msg,
         )
 
     if "seasonal_patterns" not in seasonal_data or seasonal_data["seasonal_patterns"].empty:
@@ -820,7 +825,7 @@ def create_png_seasonal_duck_chart(
         stds = seasonal_df["std"]
 
         ax1.bar(
-            seasons, means, yerr=stds, capsize=5, color=["#A8DADC", "#457B9D", "#1D3557", "#F1C40F"]
+            seasons, means, yerr=stds, capsize=5, color=["#A8DADC", "#457B9D", "#1D3557", "#F1C40F"],
         )
         ax1.set_title("Duck Factor by Season", fontweight="bold")
         ax1.set_ylabel("Duck Factor")
@@ -848,7 +853,7 @@ def create_png_seasonal_duck_chart(
         ax2.set_ylabel("Duck Factor")
         ax2.set_xticks(range(1, 13))
         ax2.set_xticklabels(
-            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         )
         ax2.grid(True, alpha=0.3)
         ax2.set_ylim(0, max(month_means) * 1.2)
@@ -863,7 +868,7 @@ def create_png_seasonal_duck_chart(
         ax3.text(0.1, 0.8, f"Peak Season: {peak_season}", fontsize=12, transform=ax3.transAxes)
         ax3.text(0.1, 0.6, f"Low Season: {low_season}", fontsize=12, transform=ax3.transAxes)
         ax3.text(
-            0.1, 0.4, f"Seasonal Range: {seasonal_range:.3f}", fontsize=12, transform=ax3.transAxes
+            0.1, 0.4, f"Seasonal Range: {seasonal_range:.3f}", fontsize=12, transform=ax3.transAxes,
         )
         ax3.text(
             0.1,
@@ -1022,7 +1027,7 @@ def create_terminal_negative_pricing_timechart(
     except (ImportError, AttributeError, TypeError):
         # Fall back to basic function
         aggregated_data = calculate_aggregated_hours_timeseries(
-            df, aggregation_level, near_zero_threshold
+            df, aggregation_level, near_zero_threshold,
         )
         has_severity = False
 
@@ -1108,7 +1113,7 @@ def create_terminal_negative_pricing_timechart(
     }
 
     title_text, ylabel_text = aggregation_labels.get(
-        aggregation_level, ("Daily Hours", "Hours per Day")
+        aggregation_level, ("Daily Hours", "Hours per Day"),
     )
     title = f"{title_text} with Negative/Near-Zero Prices - {country_name}"
     subtitle = f"Negative: <0 EUR/MWh, Near-Zero: ≤{near_zero_threshold} EUR/MWh"
@@ -1170,20 +1175,20 @@ def create_terminal_negative_pricing_timechart(
     print(f"Average negative {unit_label}: {aggregated_data['negative_hours'].mean():.1f}")
     print(f"Average near-zero {unit_label}: {aggregated_data['near_zero_hours'].mean():.1f}")
     print(
-        f"Max negative {unit_label} in a {period_unit}: {aggregated_data['negative_hours'].max():.1f}"
+        f"Max negative {unit_label} in a {period_unit}: {aggregated_data['negative_hours'].max():.1f}",
     )
     print(
-        f"Max near-zero {unit_label} in a {period_unit}: {aggregated_data['near_zero_hours'].max():.1f}"
+        f"Max near-zero {unit_label} in a {period_unit}: {aggregated_data['near_zero_hours'].max():.1f}",
     )
     periods_label = aggregation_labels[aggregation_level][0].split()[0]
-    negative_count = (aggregated_data['negative_hours'] > 0).sum()
+    negative_count = (aggregated_data["negative_hours"] > 0).sum()
     print(f"{periods_label} periods with any negative prices: {negative_count}")
 
     # Add solar quarter explanation if applicable
     if aggregation_level == "solar-quarters":
         print("\nSolar Quarter Months:")
         print(
-            "• Peak Sun (May-Jul) • Rising Sun (Feb-Apr) • Fading Sun (Aug-Oct) • Low Sun (Nov-Jan)"
+            "• Peak Sun (May-Jul) • Rising Sun (Feb-Apr) • Fading Sun (Aug-Oct) • Low Sun (Nov-Jan)",
         )
 
     print()
@@ -1209,8 +1214,9 @@ def create_png_negative_pricing_chart(
         near_zero_threshold: Threshold for near-zero pricing (EUR/MWh)
     """
     if not MATPLOTLIB_AVAILABLE:
+        msg = "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
         raise ImportError(
-            "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
+            msg,
         )
 
     analyzer = NegativePricingAnalyzer(region)
@@ -1253,7 +1259,7 @@ def create_png_negative_pricing_chart(
         ax2.set_ylabel("Hours per Day")
         ax2.set_xticks(range(1, 13))
         ax2.set_xticklabels(
-            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         )
         ax2.grid(True, alpha=0.3)
 
@@ -1295,7 +1301,7 @@ def create_png_negative_pricing_chart(
 
         if month_nums:
             ax4.plot(
-                month_nums, progress_values, marker="s", linewidth=2, markersize=6, color="#E63946"
+                month_nums, progress_values, marker="s", linewidth=2, markersize=6, color="#E63946",
             )
             ax4.set_title("Progress Toward Maximum by Month", fontweight="bold")
             ax4.set_xlabel("Month")
@@ -1349,8 +1355,9 @@ def create_png_negative_pricing_timechart(
         aggregation_level: Aggregation level - "daily", "weekly", "monthly", or "solar-quarters"
     """
     if not MATPLOTLIB_AVAILABLE:
+        msg = "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
         raise ImportError(
-            "matplotlib is required for PNG output. Please install with: pip install matplotlib>=3.7.0"
+            msg,
         )
 
     from angry_pixie_pricing.analysis.negative_pricing import (
@@ -1372,7 +1379,7 @@ def create_png_negative_pricing_timechart(
     except (ImportError, AttributeError, TypeError):
         # Fall back to basic function
         aggregated_data = calculate_aggregated_hours_timeseries(
-            df, aggregation_level, near_zero_threshold
+            df, aggregation_level, near_zero_threshold,
         )
         has_severity = False
 
@@ -1466,7 +1473,7 @@ def create_png_negative_pricing_timechart(
     }
 
     title_text, ylabel_text = aggregation_labels.get(
-        aggregation_level, ("Daily Hours", "Hours per Day")
+        aggregation_level, ("Daily Hours", "Hours per Day"),
     )
 
     ax.set_title(
@@ -1592,17 +1599,16 @@ def _calculate_simple_trend(values: list) -> str:
 
         if abs(slope) < 0.001:
             return "Stable"
-        elif slope > 0.01:
+        if slope > 0.01:
             return "Strong upward"
-        elif slope > 0.005:
+        if slope > 0.005:
             return "Moderate upward"
-        elif slope > 0:
+        if slope > 0:
             return "Slight upward"
-        elif slope < -0.01:
+        if slope < -0.01:
             return "Strong downward"
-        elif slope < -0.005:
+        if slope < -0.005:
             return "Moderate downward"
-        else:
-            return "Slight downward"
+        return "Slight downward"
     except Exception:
         return "Unable to calculate"

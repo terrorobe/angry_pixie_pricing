@@ -31,7 +31,6 @@ class LoadProfile(ABC):
             - power_kw: Power consumption in kW
             - energy_kwh: Energy consumption in kWh for the interval
         """
-        pass
 
     @property
     def data(self) -> pd.DataFrame:
@@ -66,8 +65,7 @@ class LoadProfile(ABC):
         Returns:
             DataFrame with hourly power and energy values
         """
-        hourly = self.data.resample("h").agg({"power_kw": "mean", "energy_kwh": "sum"})
-        return hourly
+        return self.data.resample("h").agg({"power_kw": "mean", "energy_kwh": "sum"})
 
     def get_statistics(self) -> dict[str, Any]:
         """Get comprehensive statistics about the load profile."""

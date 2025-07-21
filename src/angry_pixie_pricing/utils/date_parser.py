@@ -31,7 +31,8 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
         try:
             return datetime.strptime(date_string, "%Y-%m-%d")
         except ValueError:
-            raise ValueError(f"Invalid date: {date_string}") from None
+            msg = f"Invalid date: {date_string}"
+            raise ValueError(msg) from None
 
     # YYYY-MM format (month)
     elif re.match(r"^\d{4}-\d{2}$", date_string):
@@ -44,11 +45,11 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
                 from datetime import timedelta
 
                 return next_month_start - timedelta(days=1)
-            else:
-                # First day of the month
-                return datetime(year, month, 1)
+            # First day of the month
+            return datetime(year, month, 1)
         except ValueError:
-            raise ValueError(f"Invalid year-month: {date_string}") from None
+            msg = f"Invalid year-month: {date_string}"
+            raise ValueError(msg) from None
 
     # YYYY format (year)
     elif re.match(r"^\d{4}$", date_string):
@@ -57,15 +58,16 @@ def parse_flexible_date(date_string: str, is_end_date: bool = False) -> datetime
             if is_end_date:
                 # Last day of the year (December 31)
                 return datetime(year, 12, 31)
-            else:
-                # First day of the year (January 1)
-                return datetime(year, 1, 1)
+            # First day of the year (January 1)
+            return datetime(year, 1, 1)
         except ValueError:
-            raise ValueError(f"Invalid year: {date_string}") from None
+            msg = f"Invalid year: {date_string}"
+            raise ValueError(msg) from None
 
     else:
+        msg = f"Invalid date format: {date_string}. Supported formats: YYYY-MM-DD, YYYY-MM, YYYY"
         raise ValueError(
-            f"Invalid date format: {date_string}. Supported formats: YYYY-MM-DD, YYYY-MM, YYYY"
+            msg,
         )
 
 
@@ -86,13 +88,17 @@ def validate_date_range(start_date: datetime, end_date: datetime) -> None:
         ValueError: If start_date is after end_date
     """
     if start_date > end_date:
+        msg = (
+            f"Start date ({start_date.strftime('%Y-%m-%d')}) must be before "
+            f"end date ({end_date.strftime('%Y-%m-%d')})"
+        )
         raise ValueError(
-            f"Start date ({start_date.strftime('%Y-%m-%d')}) must be before end date ({end_date.strftime('%Y-%m-%d')})"
+            msg,
         )
 
 
 def parse_date_range(
-    start_date_str: str, end_date_str: str | None = None
+    start_date_str: str, end_date_str: str | None = None,
 ) -> tuple[datetime, datetime]:
     """
     Parse flexible start and end dates with smart defaults.
@@ -143,22 +149,18 @@ def format_date_range_description(start_date: datetime, end_date: datetime) -> s
             # Same month
             if start_date.day == 1 and end_date.day == _last_day_of_month(end_date):
                 return f"{start_date.strftime('%B %Y')}"
-            else:
-                return f"{start_str} to {end_str}"
-        else:
-            # Same year, different months
-            if (
-                start_date.month == 1
-                and start_date.day == 1
-                and end_date.month == 12
-                and end_date.day == 31
-            ):
-                return f"{start_date.year}"
-            else:
-                return f"{start_str} to {end_str}"
-    else:
-        # Different years
+            return f"{start_str} to {end_str}"
+        # Same year, different months
+        if (
+            start_date.month == 1
+            and start_date.day == 1
+            and end_date.month == 12
+            and end_date.day == 31
+        ):
+            return f"{start_date.year}"
         return f"{start_str} to {end_str}"
+    # Different years
+    return f"{start_str} to {end_str}"
 
 
 def _last_day_of_month(dt: datetime) -> int:
@@ -189,7 +191,7 @@ def _test_date_parsing():
             result = format_date_range_description(start_dt, end_dt)
             print(
                 f"Input: start='{start}', end='{end}' -> "
-                f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')} ({result})"
+                f"{start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')} ({result})",
             )
         except Exception as e:
             print(f"Input: start='{start}', end='{end}' -> ERROR: {e}")

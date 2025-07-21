@@ -75,11 +75,10 @@ class PriceDataSource(ABC):
                 combined_data["timestamp"] <= end_date
             )
             return combined_data[mask].reset_index(drop=True)
-        else:
-            return pd.DataFrame(columns=["timestamp", "price", "unit"])
+        return pd.DataFrame(columns=["timestamp", "price", "unit"])
 
     def _get_cache_periods(
-        self, start_date: datetime, end_date: datetime
+        self, start_date: datetime, end_date: datetime,
     ) -> list[tuple[datetime, datetime]]:
         """
         Split date range into optimal cache periods.
@@ -145,14 +144,13 @@ class PriceDataSource(ABC):
         ):
             # Past whole month
             return f"{source_name}_{region_normalized}_{start_date.strftime('%Y-%m')}.csv.gz"
-        else:
-            # Day-based or partial month
-            start_str = start_date.strftime('%Y-%m-%d')
-            end_str = end_date.strftime('%Y-%m-%d')
-            return f"{source_name}_{region_normalized}_{start_str}_to_{end_str}.csv.gz"
+        # Day-based or partial month
+        start_str = start_date.strftime("%Y-%m-%d")
+        end_str = end_date.strftime("%Y-%m-%d")
+        return f"{source_name}_{region_normalized}_{start_str}_to_{end_str}.csv.gz"
 
     def _get_cached_data(
-        self, region: str, start_date: datetime, end_date: datetime
+        self, region: str, start_date: datetime, end_date: datetime,
     ) -> pd.DataFrame | None:
         """Retrieve cached data if available (legacy method for backwards compatibility)."""
         # This method is kept for backwards compatibility but will use the new period-based logic
@@ -176,7 +174,7 @@ class PriceDataSource(ABC):
         return None
 
     def _get_cached_period_data(
-        self, region: str, start_date: datetime, end_date: datetime
+        self, region: str, start_date: datetime, end_date: datetime,
     ) -> pd.DataFrame | None:
         """Retrieve cached data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
@@ -185,8 +183,7 @@ class PriceDataSource(ABC):
         if cache_file.exists():
             try:
                 # Read CSV with gzip compression
-                df = pd.read_csv(cache_file, compression="gzip", parse_dates=["timestamp"])
-                return df
+                return pd.read_csv(cache_file, compression="gzip", parse_dates=["timestamp"])
             except Exception:
                 # If cache is corrupted, remove it
                 cache_file.unlink(missing_ok=True)
@@ -194,7 +191,7 @@ class PriceDataSource(ABC):
         return None
 
     def _cache_period_data(
-        self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame
+        self, region: str, start_date: datetime, end_date: datetime, data: pd.DataFrame,
     ):
         """Cache the data for a specific period."""
         cache_filename = self._get_cache_filename(region, start_date, end_date)
@@ -205,7 +202,7 @@ class PriceDataSource(ABC):
         with suppress(Exception):
             # Write CSV with gzip compression
             data.to_csv(
-                cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S"
+                cache_file, compression="gzip", index=False, date_format="%Y-%m-%d %H:%M:%S",
             )
 
     def clear_cache(self, region: str | None = None):
@@ -229,7 +226,7 @@ class PriceDataSource(ABC):
 
     @abstractmethod
     def _fetch_spot_prices(
-        self, region: str, start_date: datetime, end_date: datetime
+        self, region: str, start_date: datetime, end_date: datetime,
     ) -> pd.DataFrame:
         """
         Fetch hourly spot prices from the data source (no caching).
@@ -242,7 +239,6 @@ class PriceDataSource(ABC):
         Returns:
             DataFrame with columns: ['timestamp', 'price', 'unit']
         """
-        pass
 
     @abstractmethod
     def get_supported_regions(self) -> list[str]:
@@ -252,7 +248,6 @@ class PriceDataSource(ABC):
         Returns:
             List of supported region codes
         """
-        pass
 
     @abstractmethod
     def get_data_source_info(self) -> dict[str, str]:
@@ -262,4 +257,3 @@ class PriceDataSource(ABC):
         Returns:
             Dictionary with source name, license, attribution, etc.
         """
-        pass

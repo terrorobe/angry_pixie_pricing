@@ -101,8 +101,9 @@ class CostCalculator:
         elif "price" in price_data.columns:
             price_col = "price"
         else:
+            msg = f"Price column not found in data. Available columns: {price_data.columns.tolist()}"
             raise ValueError(
-                f"Price column not found in data. Available columns: {price_data.columns.tolist()}"
+                msg,
             )
 
         # Create aligned DataFrame
@@ -233,7 +234,7 @@ class CostCalculator:
         }
 
     def optimize_load_shifting(
-        self, shiftable_percentage: float = 0.2, _max_shift_hours: int = 4
+        self, shiftable_percentage: float = 0.2, _max_shift_hours: int = 4,
     ) -> dict[str, Any]:
         """Calculate potential savings from load shifting.
 

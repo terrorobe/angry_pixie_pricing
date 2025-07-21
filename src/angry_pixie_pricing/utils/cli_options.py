@@ -7,36 +7,34 @@ import click
 def add_date_options(func):
     """Decorator to add standard date options to a command."""
     func = click.option(
-        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)"
+        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
     )(func)
-    func = click.option(
-        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today"
+    return click.option(
+        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
     )(func)
-    return func
 
 
 def add_region_option(func):
     """Decorator to add region option to a command."""
     return click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")(
-        func
+        func,
     )
 
 
 def add_output_options(func):
     """Decorator to add output-related options to a command."""
     func = click.option(
-        "--output", "-o", default=None, help="Output PNG file path (enables PNG mode)."
+        "--output", "-o", default=None, help="Output PNG file path (enables PNG mode).",
     )(func)
     func = click.option("--png", is_flag=True, help="Generate PNG with auto-generated filename.")(
-        func
+        func,
     )
     func = click.option("--width", type=int, help="Chart width (terminal columns or PNG inches)")(
-        func
+        func,
     )
-    func = click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")(
-        func
+    return click.option("--height", type=int, help="Chart height (terminal rows or PNG inches)")(
+        func,
     )
-    return func
 
 
 def add_cache_option(func):
@@ -49,8 +47,7 @@ def add_standard_options(func):
     func = add_cache_option(func)
     func = add_output_options(func)
     func = add_date_options(func)
-    func = add_region_option(func)
-    return func
+    return add_region_option(func)
 
 
 # Specialized option groups for specific commands
@@ -59,24 +56,23 @@ def add_standard_options(func):
 def add_duck_factor_options(func):
     """Decorator to add duck factor specific options."""
     func = click.option(
-        "--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)"
+        "--window", "-w", default="30d", help="Rolling window size (e.g., 7d, 30d, 90d)",
     )(func)
     func = click.option(
-        "--step", "-s", default="7d", help="Step size between calculations (e.g., 1d, 7d)"
+        "--step", "-s", default="7d", help="Step size between calculations (e.g., 1d, 7d)",
     )(func)
-    func = click.option(
+    return click.option(
         "--chart-type",
         "-t",
         type=click.Choice(["time-series", "seasonal", "multi-window", "all"]),
         default="time-series",
         help="Chart type: time-series, seasonal, multi-window, or all",
     )(func)
-    return func
 
 
 def add_chart_options(func):
     """Decorator to add chart command specific options."""
-    func = click.option(
+    return click.option(
         "--chart-type",
         "-t",
         type=click.Choice(["line", "daily", "summary", "hourly", "hourly-workday", "all"]),
@@ -93,13 +89,12 @@ hourly-workday: Workday-only duck curve pattern
 all: Display line, daily, and summary together
 """,
     )(func)
-    return func
 
 
 def add_negative_pricing_options(func):
     """Decorator to add negative pricing specific options."""
     func = click.option("--threshold", default=10.0, help="Near-zero price threshold (EUR/MWh)")(
-        func
+        func,
     )
     func = click.option(
         "--severe-threshold",
@@ -112,7 +107,7 @@ def add_negative_pricing_options(func):
         help="Extreme negative price threshold (EUR/MWh, default: -100)",
     )(func)
     func = click.option(
-        "--cheap-threshold", default=40.0, help="Cheap price threshold (EUR/MWh, default: 40)"
+        "--cheap-threshold", default=40.0, help="Cheap price threshold (EUR/MWh, default: 40)",
     )(func)
     func = click.option(
         "--chart-type",
@@ -127,7 +122,7 @@ analysis: Comprehensive 4-panel analysis (default)
 timechart: Time series of daily hours with negative/near-zero prices
 """,
     )(func)
-    func = click.option(
+    return click.option(
         "--aggregation-level",
         "-a",
         type=click.Choice(["daily", "weekly", "monthly", "solar-quarters"]),
@@ -142,7 +137,6 @@ monthly: Hours per month
 solar-quarters: Hours per solar quarter (Peak Sun: May-Jul, Rising Sun: Feb-Apr, Fading Sun: Aug-Oct, Low Sun: Nov-Jan)
 """,
     )(func)
-    return func
 
 
 # Alternative approach: Option classes for more complex scenarios
@@ -152,11 +146,11 @@ class CommonOptions:
     REGION = click.option("--region", required=True, help="European region code (e.g., DE, FR, NL)")
 
     START_DATE = click.option(
-        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)"
+        "--start-date", required=True, help="Start date (YYYY-MM-DD, YYYY-MM, or YYYY)",
     )
 
     END_DATE = click.option(
-        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today"
+        "--end-date", help="End date (YYYY-MM-DD, YYYY-MM, or YYYY) - defaults to today",
     )
 
     OUTPUT = click.option("--output", "-o", help="Output PNG file path (enables PNG mode)")
@@ -182,8 +176,7 @@ class CommonParameterGroup(click.Group):
             # Add common options to every command
             f = add_cache_option(f)
             # Create the command normally
-            cmd = super(CommonParameterGroup, self).command(*args, **kwargs)(f)
-            return cmd
+            return super(CommonParameterGroup, self).command(*args, **kwargs)(f)
 
         return decorator
 

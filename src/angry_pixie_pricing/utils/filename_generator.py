@@ -111,7 +111,7 @@ def generate_duck_factor_filename(
 
 
 def generate_price_chart_filename(
-    region: str, start_date: str, end_date: str, chart_type: str = "line", base_dir: str = "images"
+    region: str, start_date: str, end_date: str, chart_type: str = "line", base_dir: str = "images",
 ) -> str:
     """
     Generate filename for price charts.
@@ -140,7 +140,7 @@ def generate_price_chart_filename(
 
 
 def get_multi_window_filenames(
-    region: str, start_date: str, end_date: str, windows: list, base_dir: str = "images"
+    region: str, start_date: str, end_date: str, windows: list, base_dir: str = "images",
 ) -> dict:
     """
     Generate filenames for multi-window analysis.

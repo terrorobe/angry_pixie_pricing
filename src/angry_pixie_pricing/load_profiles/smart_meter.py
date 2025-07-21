@@ -60,7 +60,7 @@ class SmartMeterProfile(LoadProfile):
         """Load and parse raw CSV data."""
         # Read CSV
         df = pd.read_csv(
-            self.csv_path, delimiter=self.delimiter, decimal=self.decimal, encoding=self.encoding
+            self.csv_path, delimiter=self.delimiter, decimal=self.decimal, encoding=self.encoding,
         )
 
         # Parse timestamps
@@ -70,10 +70,9 @@ class SmartMeterProfile(LoadProfile):
             df[self.timestamp_col] = pd.to_datetime(df[self.timestamp_col])
 
         # Set timestamp as index
-        df.set_index(self.timestamp_col, inplace=True)
-        df.sort_index(inplace=True)
+        df = df.set_index(self.timestamp_col)
+        return df.sort_index()
 
-        return df
 
     def get_profile(self) -> pd.DataFrame:
         """Get the load profile from smart meter data."""
@@ -95,11 +94,12 @@ class SmartMeterProfile(LoadProfile):
             data["energy_kwh"] = data[self.energy_col]
             data["power_kw"] = data["energy_kwh"] * 4  # 15 minutes = 0.25 hours
         else:
-            raise ValueError("Either power_col or energy_col must be specified")
+            msg = "Either power_col or energy_col must be specified"
+            raise ValueError(msg)
 
         # Resample to ensure consistent 15-minute intervals
         result = pd.DataFrame(
-            index=pd.date_range(start=self.start_date, end=self.end_date, freq="15min")
+            index=pd.date_range(start=self.start_date, end=self.end_date, freq="15min"),
         )
 
         # Forward fill missing values (common in smart meter data)
@@ -107,13 +107,12 @@ class SmartMeterProfile(LoadProfile):
         result["energy_kwh"] = data["energy_kwh"].reindex(result.index).ffill().bfill()
 
         # Handle any remaining NaN values
-        result.fillna(0, inplace=True)
+        return result.fillna(0)
 
-        return result
 
     @classmethod
     def from_standard_formats(
-        cls, csv_path: Path, format_type: str = "auto", **kwargs
+        cls, csv_path: Path, format_type: str = "auto", **kwargs,
     ) -> "SmartMeterProfile":
         """Create profile from common smart meter formats.
 
@@ -167,10 +166,9 @@ class SmartMeterProfile(LoadProfile):
         # Check for known patterns
         if "discovergy" in header.lower() or ";" in header:
             return "discovergy"
-        elif "tibber" in header.lower() or "from,to,consumption" in header:
+        if "tibber" in header.lower() or "from,to,consumption" in header:
             return "tibber"
-        else:
-            return "generic"
+        return "generic"
 
     def validate_data(self) -> dict[str, Any]:
         """Validate smart meter data quality."""
@@ -196,6 +194,6 @@ class SmartMeterProfile(LoadProfile):
             "negative_energy_count": negative_energy,
             "unrealistic_power_count": unrealistic_power,
             "data_quality_score": min(
-                100, 100 * (1 - len(missing_intervals) / len(expected_intervals))
+                100, 100 * (1 - len(missing_intervals) / len(expected_intervals)),
             ),
         }
