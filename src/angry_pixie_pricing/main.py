@@ -1,5 +1,6 @@
 """Main CLI entry point for angry_pixie_pricing."""
 
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -37,9 +38,24 @@ from .utils.cli_options import (
 from .utils.date_parser import format_date_range_description, parse_date_range
 from .utils.filename_generator import (
     generate_duck_factor_filename,
+    generate_load_peaks_filename,
     generate_price_chart_filename,
     get_multi_window_filenames,
 )
+
+
+def _open_file(file_path: str) -> None:
+    """Open a file using the system default application."""
+    try:
+        subprocess.run(["open", file_path], check=True)  # noqa: S603, S607
+    except subprocess.CalledProcessError:
+        click.echo(f"Failed to open {file_path}")
+    except FileNotFoundError:
+        # Fallback for non-macOS systems
+        try:
+            subprocess.run(["xdg-open", file_path], check=True)  # noqa: S603, S607
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            click.echo(f"Could not open {file_path} - please open manually")
 
 
 @click.group()
@@ -58,6 +74,7 @@ def cli(ctx: click.Context, data_source: str, cache_dir: str | None) -> None:
 @cli.command()
 @add_standard_options
 @add_chart_options
+@click.option("--open", "open_file", is_flag=True, help="Open generated PNG file after creation")
 @click.pass_context
 def chart(
     ctx: click.Context,
@@ -70,6 +87,7 @@ def chart(
     chart_type: str,
     width: int | None,
     height: int | None,
+    open_file: bool,
 ) -> None:
     """Generate hourly electricity price charts for a region and time span."""
     try:
@@ -122,6 +140,8 @@ def chart(
                             width=width or 12,
                             height=height or 6,
                         )
+                        if open_file:
+                            _open_file(output)
                 elif chart_type == "hourly":
                     if output is not None:
                         create_png_hourly_analysis_chart(
@@ -131,6 +151,8 @@ def chart(
                             width=width or 12,
                             height=height or 6,
                         )
+                        if open_file:
+                            _open_file(output)
                 elif chart_type == "hourly-workday":
                     if output is not None:
                         create_png_hourly_workday_chart(
@@ -140,6 +162,8 @@ def chart(
                             width=width or 12,
                             height=height or 6,
                         )
+                        if open_file:
+                            _open_file(output)
                 elif chart_type == "all":
                     # Create multiple PNG files with smart names
                     line_output = generate_price_chart_filename(
@@ -182,6 +206,11 @@ def chart(
                         width=width or 12,
                         height=height or 6,
                     )
+
+                    if open_file:
+                        _open_file(line_output)
+                        _open_file(hourly_output)
+                        _open_file(workday_output)
                 else:
                     click.echo(f"PNG output not supported for chart type: {chart_type}")
                     click.echo("Supported PNG chart types: line, hourly, hourly-workday, all")
@@ -318,6 +347,7 @@ def chart(
     is_flag=True,
     help="Generate profile only (no cost calculation, no dates needed)",
 )
+@click.option("--open", "open_file", is_flag=True, help="Open generated PNG files after creation")
 @click.pass_context
 def calculate(
     ctx: click.Context,
@@ -347,6 +377,7 @@ def calculate(
     cost_chart: str | None,
     handling_fee: float,
     profile_only: bool,
+    open_file: bool,
 ) -> None:
     """Calculate electricity costs using smart meter data or billing reconstruction."""
     try:
@@ -518,7 +549,7 @@ def calculate(
             click.echo(f"Base load: {stats['base_load_kw']:.1f} kW")
 
             # Always show profile in profile-only mode
-            _display_load_profile(load_profile, True, profile_chart)
+            _display_load_profile(load_profile, True, profile_chart, open_file)
 
             # Save data if requested
             if output:
@@ -557,6 +588,7 @@ def calculate(
                 day_kwh,
                 night_kwh,
                 occupancy_rate,
+                open_file,
                 region,
                 handling_fee,
             )
@@ -591,7 +623,7 @@ def calculate(
 
         # Show load profile visualization
         if show_profile or profile_chart:
-            _display_load_profile(load_profile, show_profile, profile_chart)
+            _display_load_profile(load_profile, show_profile, profile_chart, open_file)
 
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
@@ -613,7 +645,12 @@ def calculate(
         ctx.exit(1)
 
 
-def _display_load_profile(load_profile: Any, show_terminal: bool, save_png: str | None) -> None:
+def _display_load_profile(
+    load_profile: Any,
+    show_terminal: bool,
+    save_png: str | None,
+    open_file: bool = False,
+) -> None:
     """Display load profile visualization."""
     import plotext as plt
 
@@ -670,6 +707,8 @@ def _display_load_profile(load_profile: Any, show_terminal: bool, save_png: str 
     if save_png:
         _save_profile_png(load_profile, save_png)
         click.echo(f"\nLoad profile chart saved to {save_png}")
+        if open_file:
+            _open_file(save_png)
 
 
 def _show_facility_breakdown(template: Any, peak_power: float) -> None:
@@ -809,6 +848,7 @@ def _display_monthly_results(
     day_kwh: float | None = None,
     night_kwh: float | None = None,
     occupancy_rate: float | None = None,
+    open_file: bool = False,
     region: str | None = None,
     handling_fee: float = 0.0,
 ) -> None:
@@ -921,6 +961,7 @@ def _display_monthly_results(
             day_kwh,
             night_kwh,
             occupancy_rate,
+            open_file,
             region,
             handling_fee,
         )
@@ -936,6 +977,7 @@ def _save_cost_chart(
     day_kwh: float | None = None,
     night_kwh: float | None = None,
     occupancy_rate: float | None = None,
+    open_file: bool = False,
     region: str | None = None,
     handling_fee: float = 0.0,
 ) -> None:
@@ -1037,6 +1079,8 @@ def _save_cost_chart(
         plt.close()
 
         click.echo(f"\nMonthly cost chart saved to: {filename}")
+        if open_file:
+            _open_file(filename)
 
     except ImportError:
         click.echo("Warning: matplotlib not available for cost charts")
@@ -1099,11 +1143,7 @@ def clear_cache(
         click.echo(f"   🌍 Region: {region} only")
     else:
         click.echo("   🌍 ALL regions and data types")
-    types_str = ", ".join(
-        f"{src}_{typ}"
-        for src, types in cache_info["by_source_type"].items()
-        for typ in types
-    )
+    types_str = ", ".join(f"{src}_{typ}" for src, types in cache_info["by_source_type"].items() for typ in types)
     click.echo(f"   🗂️  Types: {types_str}")
 
     if not click.confirm("\nAre you ABSOLUTELY SURE you want to permanently delete this cached data?", default=False):
@@ -1121,6 +1161,7 @@ def clear_cache(
 @cli.command()
 @add_standard_options
 @add_duck_factor_options
+@click.option("--open", "open_file", is_flag=True, help="Open generated PNG file after creation")
 @click.pass_context
 def duck_factor(
     ctx: click.Context,
@@ -1133,6 +1174,7 @@ def duck_factor(
     png: bool,
     chart_type: str,
     no_cache: bool,
+    open_file: bool,
     width: int | None,
     height: int | None,
 ) -> None:
@@ -1206,6 +1248,8 @@ def duck_factor(
                             width=width or 12,
                             height=height or 6,
                         )
+                        if open_file:
+                            _open_file(output)
                 elif chart_type == "seasonal":
                     if png:
                         output = generate_duck_factor_filename(
@@ -1225,6 +1269,8 @@ def duck_factor(
                             width=width or 12,
                             height=height or 8,
                         )
+                        if open_file:
+                            _open_file(output)
                 elif chart_type == "multi-window":
                     # Create multiple window analysis with smart filenames
                     from .analysis.rolling_duck import RollingDuckAnalyzer
@@ -1250,6 +1296,8 @@ def duck_factor(
                             width=width or 12,
                             height=height or 6,
                         )
+                        if open_file:
+                            _open_file(window_output)
                 elif chart_type == "all":
                     # Create all chart types with smart filenames
                     timeseries_output = generate_duck_factor_filename(
@@ -1282,6 +1330,10 @@ def duck_factor(
                         width=width or 12,
                         height=height or 8,
                     )
+
+                    if open_file:
+                        _open_file(timeseries_output)
+                        _open_file(seasonal_output)
 
             except ImportError as e:
                 click.echo(f"Error: {e}", err=True)
@@ -1425,6 +1477,7 @@ def _display_multi_window_analysis(df: pd.DataFrame, region: str, step_days: int
 @cli.command()
 @add_standard_options
 @add_negative_pricing_options
+@click.option("--open", "open_file", is_flag=True, help="Open generated PNG file after creation")
 @click.pass_context
 def negative_pricing(
     ctx: click.Context,
@@ -1442,6 +1495,7 @@ def negative_pricing(
     no_cache: bool,
     width: int | None,
     height: int | None,
+    open_file: bool,
 ) -> None:
     """Analyze negative and near-zero electricity pricing patterns with solar potential estimates."""
     try:
@@ -1499,6 +1553,8 @@ def negative_pricing(
                             cheap_threshold=cheap_threshold,
                             aggregation_level=aggregation_level,
                         )
+                        if open_file:
+                            _open_file(output)
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
@@ -1554,6 +1610,8 @@ def negative_pricing(
                             height=height or 8,
                             near_zero_threshold=threshold,
                         )
+                        if open_file:
+                            _open_file(output)
                 except ImportError as e:
                     click.echo(f"Error: {e}", err=True)
                     click.echo("Please install matplotlib: pip install matplotlib>=3.7.0")
@@ -1704,6 +1762,7 @@ def _display_negative_pricing_summary(metrics: Any, seasonal_data: dict[str, Any
     default="hourly-evolution",
     help="Type of chart to generate",
 )
+@click.option("--open", "open_file", is_flag=True, help="Open generated PNG file after creation")
 @click.pass_context
 def load_peaks(
     ctx: click.Context,
@@ -1713,8 +1772,9 @@ def load_peaks(
     reference_year: int | None,
     percentile: float,
     output: str | None,
-    _no_cache: bool,
+    no_cache: bool,  # noqa: ARG001
     chart_type: str,
+    open_file: bool,
 ) -> None:
     """Analyze hourly peak load evolution to detect behind-the-meter PV impacts."""
     try:
@@ -1727,11 +1787,23 @@ def load_peaks(
         click.echo(f"Fetching load data for {region} from {start_year}-{end_year}...")
 
         # Fetch multi-year data
-        load_data = analyzer.fetch_multi_year_load_data(region, start_year, end_year)
+        load_data, coverage_info = analyzer.fetch_multi_year_load_data(region, start_year, end_year)
 
         if load_data.empty:
             click.echo("No load data available for the specified period")
             ctx.exit(1)
+
+        # Display coverage information
+        start_str = coverage_info["actual_start_date"].strftime("%Y-%m-%d")
+        end_str = coverage_info["actual_end_date"].strftime("%Y-%m-%d")
+
+        if coverage_info["missing_years"]:
+            click.echo(
+                f"📊 Data Coverage: {start_str} to {end_str} ({len(coverage_info['missing_years'])} years missing)",
+            )
+            click.echo(f"   Missing years: {coverage_info['missing_years']}")
+        else:
+            click.echo(f"📊 Data Coverage: {start_str} to {end_str} (complete)")
 
         click.echo(f"Analyzing {len(load_data)} hours of load data...")
 
@@ -1750,31 +1822,56 @@ def load_peaks(
                 click.echo(f"Peak migration analysis error: {e}")
 
         # Display summary
-        _display_load_analysis_summary(hourly_peaks, duck_metrics, migration_analysis, region)
+        _display_load_analysis_summary(hourly_peaks, duck_metrics, migration_analysis, region, coverage_info)
 
         # Generate charts
         if chart_type == "hourly-evolution" or chart_type == "all":
-            output_file = f"{output}_hourly_evolution.png" if output else None
+            if output == "auto":
+                filter_str = f"p{int(percentile)}" if percentile != 100 else None
+                output_file = generate_load_peaks_filename(region, coverage_info, "hourly-evolution", filter_str)
+            elif output:
+                output_file = f"{output}_hourly_evolution.png"
+            else:
+                output_file = None
             LoadPatternCharts.plot_hourly_peaks_evolution(
                 hourly_peaks,
                 region,
-                title_suffix=f" ({start_year}-{end_year}, {percentile:.0f}th percentile)",
+                coverage_info,
+                percentile=percentile,
                 output_file=output_file,
             )
+            if open_file and output_file:
+                _open_file(output_file)
 
         if chart_type == "duck-curve" or chart_type == "all":
-            output_file = f"{output}_duck_curve.png" if output else None
+            if output == "auto":
+                filter_str = f"p{int(percentile)}" if percentile != 100 else None
+                output_file = generate_load_peaks_filename(region, coverage_info, "duck-curve", filter_str)
+            elif output:
+                output_file = f"{output}_duck_curve.png"
+            else:
+                output_file = None
             LoadPatternCharts.plot_duck_curve_evolution(duck_metrics, region, output_file=output_file)
+            if open_file and output_file:
+                _open_file(output_file)
 
         if (chart_type == "peak-migration" or chart_type == "all") and not hourly_peaks.empty:
             ref_year = reference_year or hourly_peaks["year"].min()
-            output_file = f"{output}_peak_migration.png" if output else None
+            if output == "auto":
+                filter_str = f"p{int(percentile)}" if percentile != 100 else None
+                output_file = generate_load_peaks_filename(region, coverage_info, "peak-migration", filter_str)
+            elif output:
+                output_file = f"{output}_peak_migration.png"
+            else:
+                output_file = None
             LoadPatternCharts.plot_peak_migration_heatmap(
                 hourly_peaks,
                 region,
                 reference_year=ref_year,
                 output_file=output_file,
             )
+            if open_file and output_file:
+                _open_file(output_file)
 
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
@@ -1792,15 +1889,23 @@ def _display_load_analysis_summary(
     duck_metrics: pd.DataFrame,
     migration_analysis: pd.DataFrame | None,
     region: str,
+    coverage_info: dict[str, Any],
 ) -> None:
     """Display load pattern analysis summary."""
     click.echo("\n" + "=" * 70)
     click.echo("LOAD PATTERN ANALYSIS SUMMARY")
     click.echo("=" * 70)
 
+    # Show actual coverage vs requested
+    start_str = coverage_info["actual_start_date"].strftime("%Y-%m-%d")
+    end_str = coverage_info["actual_end_date"].strftime("%Y-%m-%d")
+    actual_range = f"{start_str} to {end_str}"
+    click.echo(f"Analysis period: {actual_range} ({region})")
+    if coverage_info["missing_years"]:
+        click.echo(f"Missing data: {len(coverage_info['missing_years'])} years ({coverage_info['missing_years']})")
+
     if not hourly_peaks.empty:
         years = sorted(hourly_peaks["year"].unique())
-        click.echo(f"Analysis period: {years[0]}-{years[-1]} ({_get_country_name(region)})")
         click.echo(f"Data points: {len(hourly_peaks)} hourly peak measurements")
 
         # Peak load trends

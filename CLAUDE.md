@@ -79,6 +79,29 @@ uv run angry-pixie chart --region DE --start-date 2024-07-15           # July 15
 uv run angry-pixie chart --region DE --start-date 2024-07 --output auto
 # Creates: images/prices_de_20240701_20240731.png
 
+## 📂 PNG Filename Format
+Auto-generated PNG filenames follow this pattern:
+```
+{chart_type}_{region}_{start_date}_{end_date}[_{window}][_{suffix}].png
+```
+
+**Examples:**
+- `prices_de_20240701_20240731.png` - German prices for July 2024
+- `duck-factor_de_20190101_20241231_30d_timeseries.png` - Duck factor analysis with 30-day window
+- `load-peaks_at_20200101_20241231_hourly-evolution.png` - Austrian load peaks 2020-2024
+- `load-peaks_at_20200101_20241231_hourly-evolution-p99.png` - Austrian load peaks with p99 filter
+- `negative-pricing_fr_20230101_20231231.png` - French negative pricing analysis
+
+**Components:**
+- **chart_type**: `prices`, `duck-factor`, `load-peaks`, `negative-pricing`
+- **region**: Country code (lowercase): `de`, `at`, `fr`
+- **dates**: YYYYMMDD format (no hyphens)
+- **window** (optional): `7d`, `30d`, `90d` for rolling analyses
+- **suffix** (optional): `timeseries`, `seasonal`, `workday`, `hourly-evolution`, `duck-curve`, `peak-migration`
+- **filter** (optional for load-peaks): `p99`, `p95`, `p90` for percentile filtering
+
+All files saved to `images/` directory relative to project root.
+
 # Duck curve analysis  
 uv run angry-pixie chart --region DE --start-date 2024-07 --chart-type hourly --output duck_curve
 ```
@@ -234,12 +257,30 @@ uv tree
 - **Grid Lines**: Enable both horizontal and vertical grid lines for easy reading
 - **Filter Information**: Show when data is filtered (e.g., "Workdays Only", "Holidays Excluded")
 - **Time Range**: Always display the exact date range being analyzed
+- **⚠️ CRITICAL - Incomplete Data Coverage**: When actual data coverage differs from requested time range, this MUST be clearly indicated in the chart title and/or warning messages
 
-### Examples
-- Title: "Electricity Spot Prices - Germany (2023-07-01 to 2023-07-31)"
-- Filter example: "Duck Curve Analysis - Germany (2023-07-01 to 2023-07-31)"
-- Workday filter: "Workday Duck Curve - Germany (2023-07-01 to 2023-07-31)"
-- Axis: "Price (EUR/MWh)" with automatic grid lines
+### Data Coverage Documentation
+
+**CRITICAL REQUIREMENT**: Chart titles must always show the actual data range covered, not the requested range.
+
+#### Implementation Requirements:
+1. **Title Shows Actual Coverage**: Always display the exact date range of available data
+   - `"Load Analysis - DE (2020-2023)"` (not "2020-2024" if 2024 is unavailable)
+   - `"Duck Curve - AT (2024-01-01 to 2024-06-15)"` (show actual end date)
+
+2. **Granularity Adjustment**: When requested granularity isn't available, adjust gracefully
+   - If yearly data unavailable → use monthly granularity
+   - If monthly data unavailable → use daily granularity
+   - Document the granularity used: `"Daily Load Patterns - DE (2024-07-01 to 2024-07-15)"`
+
+3. **Console Information**: Display coverage info before charts
+   - `"📊 Data Coverage: 2020-01-01 to 2023-12-31 (3 complete years)"`
+   - `"📊 Using daily granularity (monthly aggregation unavailable)"`
+
+#### Examples
+- Complete coverage: `"Electricity Spot Prices - Germany (2023-07-01 to 2023-07-31)"`
+- Partial coverage: `"Electricity Spot Prices - Germany (2023-07-01 to 2023-07-28)"`
+- Granularity adjustment: `"Daily Load Patterns - Germany (2024-01-01 to 2024-01-31)"`
 
 ### Rationale
 - Electricity prices are discrete hourly values, not continuous functions

@@ -1,6 +1,7 @@
 """Load pattern analysis for detecting behind-the-meter PV impacts."""
 
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -20,9 +21,9 @@ class LoadPatternAnalyzer:
         region: str,
         start_year: int,
         end_year: int,
-    ) -> pd.DataFrame:
+    ) -> tuple[pd.DataFrame, dict[str, Any]]:
         """
-        Fetch load data across multiple years.
+        Fetch load data across multiple years with coverage tracking.
 
         Args:
             region: Region/country code (e.g., 'DE', 'AT')
@@ -30,9 +31,18 @@ class LoadPatternAnalyzer:
             end_year: Ending year for analysis (inclusive)
 
         Returns:
-            DataFrame with load data across all requested years
+            Tuple of (DataFrame with load data, coverage_info dict)
         """
-        all_data = []
+        all_data: list[pd.DataFrame] = []
+        coverage_info: dict[str, Any] = {
+            "requested_years": list(range(start_year, end_year + 1)),
+            "available_years": [],
+            "missing_years": [],
+            "start_year": start_year,
+            "end_year": end_year,
+            "actual_start_date": None,
+            "actual_end_date": None,
+        }
 
         for year in range(start_year, end_year + 1):
             start_date = datetime(year, 1, 1)
@@ -46,8 +56,10 @@ class LoadPatternAnalyzer:
                 )
                 year_data["year"] = year
                 all_data.append(year_data)
+                coverage_info["available_years"].append(year)
                 print(f"✓ Fetched {len(year_data)} hours of load data for {region} {year}")
             except (ValueError, ConnectionError) as e:
+                coverage_info["missing_years"].append(year)
                 print(f"⚠ Failed to fetch {region} {year} data: {e}")
                 continue
 
@@ -55,7 +67,20 @@ class LoadPatternAnalyzer:
             msg = f"No load data available for {region} from {start_year}-{end_year}"
             raise ValueError(msg)
 
-        return pd.concat(all_data, ignore_index=True)
+        # Determine actual date coverage from the data
+        combined_data = pd.concat(all_data, ignore_index=True)
+
+        # Convert timestamp column to datetime if it's not already
+        if "timestamp" in combined_data.columns:
+            combined_data["timestamp"] = pd.to_datetime(combined_data["timestamp"])
+            coverage_info["actual_start_date"] = combined_data["timestamp"].min()
+            coverage_info["actual_end_date"] = combined_data["timestamp"].max()
+        else:
+            # Fallback to year-based tracking if no timestamp column
+            coverage_info["actual_start_date"] = datetime(min(coverage_info["available_years"]), 1, 1)
+            coverage_info["actual_end_date"] = datetime(max(coverage_info["available_years"]), 12, 31)
+
+        return combined_data, coverage_info
 
     def calculate_hourly_peaks(
         self,
@@ -91,7 +116,6 @@ class LoadPatternAnalyzer:
             )
             .reset_index()
         )
-
 
     def calculate_daily_peaks(
         self,

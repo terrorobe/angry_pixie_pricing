@@ -1,6 +1,7 @@
 """Visualization tools for load pattern analysis."""
 
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import plotext as plt_term
@@ -10,10 +11,25 @@ class LoadPatternCharts:
     """Generate charts for load pattern analysis."""
 
     @staticmethod
+    def _generate_coverage_title(base_title: str, region: str, coverage_info: dict[str, Any]) -> str:
+        """Generate a title showing actual data coverage with precise dates."""
+        start_date = coverage_info["actual_start_date"]
+        end_date = coverage_info["actual_end_date"]
+
+        # Format dates as YYYY-MM-DD
+        start_str = start_date.strftime("%Y-%m-%d")
+        end_str = end_date.strftime("%Y-%m-%d")
+
+        coverage_str = f"({start_str} to {end_str})"
+
+        return f"{base_title} - {region.upper()} {coverage_str}"
+
+    @staticmethod
     def plot_hourly_peaks_evolution(
         peaks_df: pd.DataFrame,
         region: str,
-        title_suffix: str = "",
+        coverage_info: dict[str, Any],
+        percentile: float = 95.0,
         output_file: str | Path | None = None,
     ) -> None:
         """
@@ -22,9 +38,14 @@ class LoadPatternCharts:
         Args:
             peaks_df: DataFrame with hourly peaks by year
             region: Region code for chart title
-            title_suffix: Additional text for chart title
+            coverage_info: Dict with actual data coverage information
+            percentile: Percentile used for peak calculation (for title display)
             output_file: Optional file path for saving chart as image
         """
+        # Generate title with actual coverage and percentile info
+        base_title = f"Hourly Peak Load Evolution (P{percentile:g})"
+        title = LoadPatternCharts._generate_coverage_title(base_title, region, coverage_info)
+
         # Pivot data for plotting
         peaks_pivot = peaks_df.pivot_table(index="hour", columns="year", values="peak_load", aggfunc="mean")
 
@@ -55,7 +76,7 @@ class LoadPatternCharts:
                 ax.set_xlabel("Hour of Day", fontsize=12, fontweight="bold")
                 ax.set_ylabel("Peak Load (GW)", fontsize=12, fontweight="bold")
                 ax.set_title(
-                    f"Hourly Peak Load Evolution - {region.upper()}{title_suffix}",
+                    title,
                     fontsize=14,
                     fontweight="bold",
                     pad=20,
@@ -99,7 +120,7 @@ class LoadPatternCharts:
                 )
 
         # Chart formatting
-        plt_term.title(f"Hourly Peak Load Evolution - {region.upper()}{title_suffix}")
+        plt_term.title(title)
         plt_term.xlabel("Hour of Day")
         plt_term.ylabel("Peak Load (GW)")
 

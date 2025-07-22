@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 
 def _find_project_root() -> str:
@@ -177,6 +178,45 @@ def get_multi_window_filenames(
         filenames[f"{window_str}"] = filename
 
     return filenames
+
+
+def generate_load_peaks_filename(
+    region: str,
+    coverage_info: dict[str, Any],
+    chart_subtype: str = "hourly-evolution",
+    filter_param: str | None = None,
+    base_dir: str = "images",
+) -> str:
+    """
+    Generate filename for load peaks charts using ACTUAL data coverage.
+
+    Args:
+        region: Region code
+        coverage_info: Coverage info dict with actual_start_date and actual_end_date
+        chart_subtype: Subtype (hourly-evolution, duck-curve, peak-migration)
+        filter_param: Optional filter parameter (e.g., "p99", "p95", "p90")
+        base_dir: Base directory
+
+    Returns:
+        Full path for load peaks chart
+    """
+    start_date = coverage_info["actual_start_date"].strftime("%Y-%m-%d")
+    end_date = coverage_info["actual_end_date"].strftime("%Y-%m-%d")
+
+    # Build suffix with optional filter parameter
+    suffix_parts = [chart_subtype]
+    if filter_param:
+        suffix_parts.append(filter_param)
+    suffix = "-".join(suffix_parts)
+
+    return generate_chart_filename(
+        chart_type="load-peaks",
+        region=region,
+        start_date=start_date,
+        end_date=end_date,
+        suffix=suffix,
+        base_dir=base_dir,
+    )
 
 
 def generate_timestamped_filename(chart_type: str, region: str, base_dir: str = "images") -> str:
